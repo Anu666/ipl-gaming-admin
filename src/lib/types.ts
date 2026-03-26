@@ -99,7 +99,7 @@ export interface Transaction {
 }
 
 // ── Request/Response shapes ──────────────────────────────────────────────────
-export type CreateUserRequest = Omit<User, 'id' | 'createdDate' | 'updatedDate' | 'lastLoginDate'>
+export type CreateUserRequest = Omit<User, 'id' | 'apiKey' | 'createdDate' | 'updatedDate' | 'lastLoginDate'>
 
 export type UpdateUserRequest = User
 
@@ -118,3 +118,7 @@ export type UpdateUserAnswerRequest = UserAnswer
 export type CreateTransactionRequest = Omit<Transaction, 'id'>
 
 export type UpdateTransactionRequest = Transaction
+
+export interface UpdateCreditsRequest {
+  credits: number
+}

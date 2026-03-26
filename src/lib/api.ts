@@ -32,7 +32,7 @@ export function clearApiKey(): void {
 }
 
 // ── Base fetch ────────────────────────────────────────────────────────────────
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:5000'
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'https://localhost:44331'
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const key = getApiKey()
@@ -59,6 +59,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 // ── Users ─────────────────────────────────────────────────────────────────────
 const users = {
+  getMe: () => request<User>('/api/users/me'),
   getAll: () => request<User[]>('/api/users'),
   getById: (id: string) => request<User>(`/api/users/${id}`),
   getByApiKey: (apiKey: string) => request<User>(`/api/users/GetUserByApiKey/${encodeURIComponent(apiKey)}`),
@@ -66,6 +67,8 @@ const users = {
     request<User>('/api/users', { method: 'POST', body: JSON.stringify(body) }),
   update: (body: UpdateUserRequest) =>
     request<User>('/api/users', { method: 'PUT', body: JSON.stringify(body) }),
+  updateCredits: (id: string, credits: number) =>
+    request<User>(`/api/users/${id}/credits`, { method: 'PATCH', body: JSON.stringify({ credits }) }),
   delete: (id: string) => request<void>(`/api/users/${id}`, { method: 'DELETE' }),
   refreshCache: () => request<void>('/api/users/RefreshCache', { method: 'POST' }),
 }

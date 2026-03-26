@@ -4,22 +4,26 @@ interface NavItem {
   page: Page
   label: string
   icon: string
+  superAdminOnly?: boolean
 }
 
 const NAV_ITEMS: NavItem[] = [
   { page: 'home', label: 'Dashboard', icon: '⊞' },
   { page: 'matches', label: 'Matches', icon: '🏏' },
   { page: 'questions', label: 'Questions', icon: '❓' },
-  { page: 'users', label: 'Users', icon: '👤' },
+  { page: 'users', label: 'Users', icon: '👤', superAdminOnly: true },
   { page: 'transactions', label: 'Transactions', icon: '💳' },
 ]
 
 interface Props {
   current: Page
   onNavigate: (page: Page) => void
+  isSuperAdmin: boolean
 }
 
-export function SideNav({ current, onNavigate }: Props) {
+export function SideNav({ current, onNavigate, isSuperAdmin }: Props) {
+  const visibleItems = NAV_ITEMS.filter(item => !item.superAdminOnly || isSuperAdmin)
+
   return (
     <aside className="sidebar">
       <div className="sidebar-head">
@@ -28,7 +32,7 @@ export function SideNav({ current, onNavigate }: Props) {
       </div>
 
       <nav className="sidebar-nav" aria-label="Main navigation">
-        {NAV_ITEMS.map(({ page, label, icon }) => (
+        {visibleItems.map(({ page, label, icon }) => (
           <button
             key={page}
             type="button"
@@ -44,3 +48,4 @@ export function SideNav({ current, onNavigate }: Props) {
     </aside>
   )
 }
+
