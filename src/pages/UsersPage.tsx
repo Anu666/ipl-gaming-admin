@@ -53,6 +53,8 @@ export function UsersPage() {
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
+  const [syncing, setSyncing] = useState(false)
+  const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   const loadUsers = useCallback(async () => {
     setLoading(true)
@@ -147,6 +149,20 @@ export function UsersPage() {
     }
   }
 
+  const handleSyncCache = async () => {
+    setSyncing(true)
+    setSyncMsg(null)
+    try {
+      await api.users.refreshCache()
+      setSyncMsg({ ok: true, text: 'Cache refreshed' })
+    } catch (e) {
+      setSyncMsg({ ok: false, text: e instanceof Error ? e.message : 'Sync failed' })
+    } finally {
+      setSyncing(false)
+      setTimeout(() => setSyncMsg(null), 3000)
+    }
+  }
+
   const copyToClipboard = (text: string, key: string) => {
     void navigator.clipboard.writeText(text).then(() => {
       setCopied(key)
@@ -162,9 +178,29 @@ export function UsersPage() {
           <h2 className="panel-title">Users</h2>
           <p className="subtle">{loading ? 'Loading…' : `${users.length} total`}</p>
         </div>
-        <button className="btn-primary" type="button" onClick={() => setModal({ type: 'create' })}>
-          + Add User
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          {syncMsg !== null && (
+            <span style={{
+              fontSize: '0.82rem',
+              color: syncMsg.ok ? 'var(--mint)' : 'var(--rose)',
+              opacity: 0.9,
+            }}>
+              {syncMsg.ok ? '✓' : '✕'} {syncMsg.text}
+            </span>
+          )}
+          <button
+            className="btn-secondary"
+            type="button"
+            onClick={() => void handleSyncCache()}
+            disabled={syncing}
+            title="Refresh the in-memory user API key cache"
+          >
+            {syncing ? 'Syncing…' : '↻ Sync Cache'}
+          </button>
+          <button className="btn-primary" type="button" onClick={() => setModal({ type: 'create' })}>
+            + Add User
+          </button>
+        </div>
       </div>
 
       {/* Table */}

@@ -803,3 +803,180 @@
   background: #ffffff1a;
 }
 
+/* ── Matches page ── */
+.matches-page-title {
+  margin: 0 0 0.15rem;
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 1.8rem;
+  letter-spacing: 0.04em;
+  font-weight: 400;
+}
+
+/* Filter tabs */
+.match-filter-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.match-filter-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #ffffff28;
+  border-radius: 999px;
+  background: #ffffff0d;
+  color: var(--paper);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 0.88rem;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.match-filter-tab:hover {
+  background: #ffffff18;
+}
+
+.match-filter-tab.active {
+  background: linear-gradient(90deg, var(--teal), #3a86ff);
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.match-filter-count {
+  font-size: 0.75rem;
+  background: #ffffff22;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  line-height: 1.4;
+}
+
+.match-filter-tab.active .match-filter-count {
+  background: #ffffff33;
+}
+
+/* Match card grid */
+.match-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+/* Match card */
+.match-card {
+  background: #ffffff0d;
+  border: 1px solid #ffffff1a;
+  border-left-width: 3px;
+  border-radius: 1rem;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  backdrop-filter: blur(8px);
+  transition: background 0.15s;
+}
+
+.match-card:hover {
+  background: #ffffff14;
+}
+
+.match-card--past {
+  border-left-color: #ffffff30;
+  opacity: 0.7;
+}
+
+.match-card--past:hover {
+  opacity: 1;
+}
+
+.match-card--current {
+  border-left-color: var(--mint);
+  box-shadow: 0 0 0 1px #7ad99520 inset;
+}
+
+.match-card--upcoming {
+  border-left-color: var(--teal);
+}
+
+/* Status badge */
+.match-card-top {
+  display: flex;
+  align-items: center;
+}
+
+.match-status-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.match-status--past     { background: #ffffff12; border-color: #ffffff22; color: #ffffffaa; }
+.match-status--current  { background: #7ad99522; border-color: #7ad99555; color: var(--mint); }
+.match-status--upcoming { background: #219ebc22; border-color: #219ebc55; color: #6dd5ed; }
+
+/* Teams row */
+.match-vs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.match-team {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+}
+
+.match-team--right {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.match-team-code {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 1.8rem;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.match-team-name {
+  font-size: 0.75rem;
+  opacity: 0.65;
+}
+
+.match-vs-text {
+  font-size: 0.8rem;
+  opacity: 0.45;
+  flex-shrink: 0;
+  padding: 0 0.25rem;
+}
+
+/* Meta info */
+.match-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-top: 1px solid #ffffff12;
+  padding-top: 0.65rem;
+}
+
+.match-meta-item {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .match-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

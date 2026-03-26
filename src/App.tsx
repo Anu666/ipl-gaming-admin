@@ -7,7 +7,8 @@ import { getApiKey, clearApiKey, api } from './lib/api'
 import type { Page, User } from './lib/types'
 import { UserRole } from './lib/types'
 import { HomePage } from './pages/HomePage'
-import { UsersPage } from './pages/UsersPage'
+import { MatchesPage } from './pages/MatchesPage'
+import { UsersPage } from './pages/UsersPage.tsx'
 
 const PAGE_LABELS: Record<Page, string> = {
   home: 'Dashboard',
@@ -94,7 +95,27 @@ function App() {
     )
   }
 
+  const isAdminOrAbove = currentUser !== null && currentUser.role >= UserRole.Admin
   const isSuperAdmin = currentUser?.role === UserRole.SuperAdmin
+
+  // Block non-admin roles from the entire admin app
+  if (currentUser !== null && !isAdminOrAbove) {
+    return (
+      <div className="app-shell gate-shell">
+        <div className="gate-card" style={{ textAlign: 'center' }}>
+          <p style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🚫</p>
+          <h2 className="gate-title" style={{ fontSize: '1.4rem' }}>Access Denied</h2>
+          <p className="gate-subtitle" style={{ marginBottom: '1.5rem' }}>
+            This application is restricted to Admins and Super Admins only.
+            Your account (<strong>{currentUser.name}</strong>) does not have the required permissions.
+          </p>
+          <button className="btn-secondary" onClick={handleLogout} type="button">
+            Sign out
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   // Redirect away from Users page if role drops
   const safePage: Page = currentPage === 'users' && !isSuperAdmin ? 'home' : currentPage
@@ -114,11 +135,7 @@ function App() {
 
           {safePage === 'home' && <HomePage onNavigate={setCurrentPage} />}
           {safePage === 'users' && isSuperAdmin && <UsersPage />}
-          {safePage === 'matches' && (
-            <div className="page-content">
-              <div className="panel"><p className="panel-title">Matches</p><p className="subtle">Coming soon</p></div>
-            </div>
-          )}
+          {safePage === 'matches' && <MatchesPage />}
           {safePage === 'questions' && (
             <div className="page-content">
               <div className="panel"><p className="panel-title">Questions</p><p className="subtle">Coming soon</p></div>
