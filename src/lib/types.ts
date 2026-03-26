@@ -101,7 +101,14 @@ export interface Transaction {
 // ── Request/Response shapes ──────────────────────────────────────────────────
 export type CreateUserRequest = Omit<User, 'id' | 'apiKey' | 'createdDate' | 'updatedDate' | 'lastLoginDate'>
 
-export type UpdateUserRequest = User
+export interface UpdateUserRequest {
+  id: string
+  name: string
+  email: string
+  phoneNumber: string
+  role: UserRole
+  isActive: boolean
+}
 
 export type CreateMatchRequest = Omit<Match, 'id'>
 
@@ -119,6 +126,14 @@ export type CreateTransactionRequest = Omit<Transaction, 'id'>
 
 export type UpdateTransactionRequest = Transaction
 
+export const CreditsOperation = {
+  Override: 0,
+  Increase: 1,
+} as const
+
+export type CreditsOperation = (typeof CreditsOperation)[keyof typeof CreditsOperation]
+
 export interface UpdateCreditsRequest {
   credits: number
+  operation: CreditsOperation
 }

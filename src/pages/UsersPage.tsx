@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../lib/api'
 import type { User } from '../lib/types'
-import { UserRole, USER_ROLE_LABELS } from '../lib/types'
+import { UserRole, USER_ROLE_LABELS, CreditsOperation } from '../lib/types'
 
 // ── Local types ──────────────────────────────────────────────────────────────
 type ModalState =
@@ -52,7 +52,7 @@ export function UsersPage() {
   const [modal, setModal] = useState<ModalState | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState<string | null>(null)
 
   const loadUsers = useCallback(async () => {
     setLoading(true)
@@ -74,7 +74,7 @@ export function UsersPage() {
   const closeModal = () => {
     setModal(null)
     setFormError(null)
-    setCopied(false)
+    setCopied(null)
   }
 
   const handleCreate = async (form: UserFormState) => {
@@ -103,16 +103,12 @@ export function UsersPage() {
     setFormError(null)
     try {
       const updated = await api.users.update({
-        ...user,
+        id: user.id,
         name: form.name,
         email: form.email,
         phoneNumber: form.phoneNumber,
         role: form.role,
         isActive: form.isActive,
-        // credits updated via dedicated credits modal — preserve current value
-        credits: user.credits,
-        // apiKey preserved server-side
-        apiKey: user.apiKey,
       })
       setUsers(prev => prev.map(u => u.id === updated.id ? updated : u))
       closeModal()
@@ -137,11 +133,11 @@ export function UsersPage() {
     }
   }
 
-  const handleUpdateCredits = async (user: User, credits: number) => {
+  const handleUpdateCredits = async (user: User, credits: number, operation: CreditsOperation) => {
     setSubmitting(true)
     setFormError(null)
     try {
-      const updated = await api.users.updateCredits(user.id, credits)
+      const updated = await api.users.updateCredits(user.id, { credits, operation })
       setUsers(prev => prev.map(u => u.id === updated.id ? updated : u))
       closeModal()
     } catch (e) {
@@ -151,10 +147,10 @@ export function UsersPage() {
     }
   }
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = (text: string, key: string) => {
     void navigator.clipboard.writeText(text).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      setCopied(key)
+      setTimeout(() => setCopied(prev => prev === key ? null : prev), 2000)
     })
   }
 
@@ -246,6 +242,13 @@ export function UsersPage() {
                           onClick={() => setModal({ type: 'credits', user })}
                         >💰</button>
                         <button
+                          className="btn-icon"
+                          title="Copy API key"
+                          type="button"
+                          style={{ opacity: copied === user.id ? 1 : undefined }}
+                          onClick={() => copyToClipboard(user.apiKey, user.id)}
+                        >{copied === user.id ? '✓' : '🔑'}</button>
+                        <button
                           className="btn-icon danger"
                           title="Delete user"
                           type="button"
@@ -322,7 +325,7 @@ export function UsersPage() {
           {modal.type === 'credits' && (
             <CreditsModal
               user={modal.user}
-              onSubmit={credits => void handleUpdateCredits(modal.user, credits)}
+              onSubmit={(credits, operation) => void handleUpdateCredits(modal.user, credits, operation)}
               onCancel={closeModal}
               submitting={submitting}
               error={formError}
@@ -371,9 +374,9 @@ export function UsersPage() {
                     <button
                       className="copy-btn"
                       type="button"
-                      onClick={() => copyToClipboard(modal.user.apiKey)}
+                      onClick={() => copyToClipboard(modal.user.apiKey, 'modal')}
                     >
-                      {copied ? '✓ Copied' : '📋 Copy'}
+                      {copied === 'modal' ? '✓ Copied' : '📋 Copy'}
                     </button>
                   </div>
                   <p className="subtle" style={{ marginTop: '0.4rem' }}>
@@ -536,18 +539,25 @@ function UserFormModal({ mode, user, onSubmit, onCancel, submitting, error }: Us
 // ── Credits update modal ──────────────────────────────────────────────────────
 interface CreditsModalProps {
   user: User
-  onSubmit: (credits: number) => void
+  onSubmit: (credits: number, operation: CreditsOperation) => void
   onCancel: () => void
   submitting: boolean
   error: string | null
 }
 
 function CreditsModal({ user, onSubmit, onCancel, submitting, error }: CreditsModalProps) {
-  const [credits, setCredits] = useState<number>(user.credits)
+  const [operation, setOperation] = useState<CreditsOperation>(CreditsOperation.Increase)
+  const [amountStr, setAmountStr] = useState<string>('')
+
+  const amount = parseFloat(amountStr) || 0
+
+  const preview = operation === CreditsOperation.Override
+    ? amount
+    : user.credits + amount
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(credits)
+    onSubmit(amount, operation)
   }
 
   return (
@@ -562,25 +572,55 @@ function CreditsModal({ user, onSubmit, onCancel, submitting, error }: CreditsMo
           <p style={{ marginBottom: '1rem' }}>
             Updating credits for <strong>{user.name}</strong>
           </p>
+
           <div className="form-group">
-            <label className="form-label" htmlFor="cr-credits">New Credits Value</label>
+            <span className="form-label">Operation</span>
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.35rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="cr-op"
+                  checked={operation === CreditsOperation.Increase}
+                  onChange={() => { setOperation(CreditsOperation.Increase); setAmountStr('') }}
+                />
+                Increase by amount
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="cr-op"
+                  checked={operation === CreditsOperation.Override}
+                  onChange={() => { setOperation(CreditsOperation.Override); setAmountStr(String(user.credits)) }}
+                />
+                Override (set to value)
+              </label>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="cr-amount">
+              {operation === CreditsOperation.Override ? 'New value' : 'Amount to add'}
+            </label>
             <input
-              id="cr-credits"
+              id="cr-amount"
               className="form-control"
               type="number"
-              min={0}
+              min={operation === CreditsOperation.Override ? 0 : undefined}
               step={0.01}
-              value={credits}
-              onChange={e => setCredits(parseFloat(e.target.value) || 0)}
+              value={amountStr}
+              placeholder="0"
+              onChange={e => setAmountStr(e.target.value)}
               autoFocus
             />
           </div>
-          <p className="subtle">
-            Current:{' '}
-            <span style={{ color: 'var(--sun)', fontWeight: 600 }}>{user.credits}</span>
-          </p>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginTop: '0.25rem' }}>
+            <span className="subtle">Current: <span style={{ color: 'var(--sun)', fontWeight: 600 }}>{user.credits}</span></span>
+            <span className="subtle">Result: <span style={{ color: 'var(--mint)', fontWeight: 600 }}>{preview}</span></span>
+          </div>
+
           {error !== null && (
-            <p style={{ color: 'var(--rose)', marginTop: '0.5rem', fontSize: '0.88rem' }}>{error}</p>
+            <p style={{ color: 'var(--rose)', marginTop: '0.75rem', fontSize: '0.88rem' }}>{error}</p>
           )}
         </div>
 

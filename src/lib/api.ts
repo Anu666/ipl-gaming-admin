@@ -6,6 +6,7 @@ import type {
   Transaction,
   CreateUserRequest,
   UpdateUserRequest,
+  UpdateCreditsRequest,
   CreateMatchRequest,
   UpdateMatchRequest,
   CreateQuestionRequest,
@@ -67,8 +68,8 @@ const users = {
     request<User>('/api/users', { method: 'POST', body: JSON.stringify(body) }),
   update: (body: UpdateUserRequest) =>
     request<User>('/api/users', { method: 'PUT', body: JSON.stringify(body) }),
-  updateCredits: (id: string, credits: number) =>
-    request<User>(`/api/users/${id}/credits`, { method: 'PATCH', body: JSON.stringify({ credits }) }),
+  updateCredits: (id: string, body: UpdateCreditsRequest) =>
+    request<User>(`/api/users/${id}/credits`, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: (id: string) => request<void>(`/api/users/${id}`, { method: 'DELETE' }),
   refreshCache: () => request<void>('/api/users/RefreshCache', { method: 'POST' }),
 }

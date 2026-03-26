@@ -22,21 +22,32 @@ function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home')
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [userLoading, setUserLoading] = useState(false)
+  const [userError, setUserError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setCurrentUser(null)
-      return
-    }
+  const fetchMe = () => {
+    if (!isAuthenticated) return
     setUserLoading(true)
+    setUserError(null)
     api.users.getMe()
-      .then(setCurrentUser)
-      .catch(() => {
-        // Invalid or expired API key — force re-authentication
-        clearApiKey()
-        setIsAuthenticated(false)
+      .then(user => { setCurrentUser(user); setUserError(null) })
+      .catch((err: unknown) => {
+        const is401 = err instanceof Error && err.message.startsWith('[401]')
+        if (is401) {
+          clearApiKey()
+          setIsAuthenticated(false)
+        } else {
+          const msg = err instanceof Error ? err.message : 'Unknown error'
+          setUserError(msg)
+        }
       })
       .finally(() => setUserLoading(false))
+  }
+
+  useEffect(() => {
+    setCurrentUser(null)
+    setUserError(null)
+    fetchMe()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated])
 
   const handleLogout = () => {
@@ -57,6 +68,28 @@ function App() {
     return (
       <div className="app-shell gate-shell">
         <p style={{ opacity: 0.6 }}>Verifying credentials…</p>
+      </div>
+    )
+  }
+
+  if (userError !== null) {
+    return (
+      <div className="app-shell gate-shell">
+        <div className="gate-card" style={{ textAlign: 'center' }}>
+          <p style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚠️</p>
+          <h2 className="gate-title" style={{ fontSize: '1.4rem' }}>Something went wrong</h2>
+          <p className="gate-subtitle" style={{ marginBottom: '1.5rem', color: 'var(--rose)', fontSize: '0.85rem', wordBreak: 'break-all' }}>
+            {userError}
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+            <button className="btn-secondary" onClick={fetchMe} type="button">
+              Retry
+            </button>
+            <button className="btn-primary" onClick={() => window.location.reload()} type="button">
+              Refresh page
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
