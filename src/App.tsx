@@ -9,12 +9,14 @@ import { UserRole } from './lib/types'
 import { HomePage } from './pages/HomePage'
 import { MatchesPage } from './pages/MatchesPage'
 import { QuestionsPage } from './pages/QuestionsPage'
+import { MatchQuestionsPage } from './pages/MatchQuestionsPage'
 import { UsersPage } from './pages/UsersPage'
 
 const PAGE_LABELS: Record<Page, string> = {
   home: 'Dashboard',
   matches: 'Matches',
-  questions: 'Questions',
+  questions: 'Question Templates',
+  'match-questions': 'Match Questions',
   users: 'Users',
   transactions: 'Transactions',
 }
@@ -118,8 +120,9 @@ function App() {
     )
   }
 
-  // Redirect away from Users page if role drops
-  const safePage: Page = currentPage === 'users' && !isSuperAdmin ? 'home' : currentPage
+  // Redirect away from SuperAdmin-only pages if role drops
+  const superAdminPages: Page[] = ['users', 'transactions']
+  const safePage: Page = superAdminPages.includes(currentPage) && !isSuperAdmin ? 'home' : currentPage
 
   return (
     <div className="app-shell">
@@ -138,6 +141,7 @@ function App() {
           {safePage === 'users' && isSuperAdmin && <UsersPage />}
           {safePage === 'matches' && <MatchesPage />}
           {safePage === 'questions' && <QuestionsPage />}
+          {safePage === 'match-questions' && <MatchQuestionsPage />}
           {safePage === 'transactions' && (
             <div className="page-content">
               <div className="panel"><p className="panel-title">Transactions</p><p className="subtle">Coming soon</p></div>

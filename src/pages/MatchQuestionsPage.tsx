@@ -1,0 +1,555 @@
+import { useState, useEffect, useCallback } from 'react'
+import matchesJson from '../assets/json/matches.json'
+import templatesJson from '../assets/json/question-templates.json'
+import { api } from '../lib/api'
+import type { Question } from '../lib/types'
+
+// ── Local types ───────────────────────────────────────────────────────────────
+
+interface MatchItem {
+  id: string
+  matchDate: string
+  firstBattingTeamName: string
+  firstBattingTeamCode: string
+  secondBattingTeamName: string
+  secondBattingTeamCode: string
+  matchCommenceStartDate: string
+}
+
+interface QuestionTemplate {
+  id: number
+  category: string
+  questionText: string
+  options: { id: number; optionText: string }[]
+  credits: number
+}
+
+interface EditDraft {
+  questionText: string
+  opt1: string
+  opt2: string
+  credits: number
+  submitting: boolean
+  error: string | null
+}
+
+type SavedRow   = { kind: 'saved';   q: Question }
+type EditingRow = { kind: 'editing'; q: Question; draft: EditDraft }
+type NewRow     = { kind: 'new';     key: string; draft: EditDraft }
+type QuestionRow = SavedRow | EditingRow | NewRow
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function rowKey(row: QuestionRow): string {
+  return row.kind === 'new' ? row.key : row.q.id
+}
+
+const allMatches = (matchesJson as unknown as MatchItem[]).sort(
+  (a, b) => new Date(a.matchCommenceStartDate).getTime() - new Date(b.matchCommenceStartDate).getTime(),
+)
+
+const allTemplates = templatesJson as unknown as QuestionTemplate[]
+const TEMPLATE_CATS = ['All', ...Array.from(new Set(allTemplates.map(t => t.category)))]
+
+function getDefaultMatchId(): string {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const m = allMatches.find(m => {
+    const d = new Date(m.matchDate)
+    d.setHours(0, 0, 0, 0)
+    return d >= today
+  })
+  return (m ?? allMatches[0])?.id ?? ''
+}
+
+function matchLabel(m: MatchItem): string {
+  const date = new Date(m.matchDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+  return `${m.firstBattingTeamCode} vs ${m.secondBattingTeamCode}  ·  ${date}`
+}
+
+function blankDraft(text = '', opt1 = '', opt2 = '', credits = 10): EditDraft {
+  return { questionText: text, opt1, opt2, credits, submitting: false, error: null }
+}
+
+function applyTeams(str: string, match?: MatchItem): string {
+  if (!match) return str
+  return str
+    .replace(/Team 1/g, match.firstBattingTeamName)
+    .replace(/Team 2/g, match.secondBattingTeamName)
+}
+
+let _counter = 0
+const genKey = () => `nq-${++_counter}`
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function MatchQuestionsPage() {
+  const [matchId, setMatchId] = useState(getDefaultMatchId)
+  const [rows, setRows] = useState<QuestionRow[]>([])
+  const [loading, setLoading] = useState(false)
+  const [loadErr, setLoadErr] = useState<string | null>(null)
+  const [showPicker, setShowPicker] = useState(false)
+  const [pickerCat, setPickerCat] = useState('All')
+
+  const match = allMatches.find(m => m.id === matchId)
+
+  // ── Load questions for selected match ───────────────────────────────────────
+  const loadQuestions = useCallback(async (id: string) => {
+    if (!id) return
+    setLoading(true)
+    setLoadErr(null)
+    setRows([])
+    try {
+      const qs = await api.questions.getByMatch(id)
+      setRows([...qs].sort((a, b) => a.sequence - b.sequence).map(q => ({ kind: 'saved', q })))
+    } catch (e) {
+      setLoadErr(e instanceof Error ? e.message : 'Failed to load questions')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { void loadQuestions(matchId) }, [matchId, loadQuestions])
+
+  // ── Draft state helpers ─────────────────────────────────────────────────────
+  const patchDraft = (key: string, patch: Partial<EditDraft>) =>
+    setRows(prev => prev.map(r => {
+      if (rowKey(r) !== key) return r
+      if (r.kind === 'new')     return { ...r, draft: { ...r.draft, ...patch } } as NewRow
+      if (r.kind === 'editing') return { ...r, draft: { ...r.draft, ...patch } } as EditingRow
+      return r
+    }))
+
+  const addBlank = () =>
+    setRows(prev => [...prev, { kind: 'new', key: genKey(), draft: blankDraft() }])
+
+  const addFromTemplate = (t: QuestionTemplate) => {
+    const draft = blankDraft(
+      applyTeams(t.questionText, match),
+      applyTeams(t.options[0]?.optionText ?? '', match),
+      applyTeams(t.options[1]?.optionText ?? '', match),
+      t.credits,
+    )
+    setRows(prev => [...prev, { kind: 'new', key: genKey(), draft }])
+    setShowPicker(false)
+  }
+
+  const removeNew = (key: string) =>
+    setRows(prev => prev.filter(r => !(r.kind === 'new' && r.key === key)))
+
+  const startEdit = (id: string) =>
+    setRows(prev => prev.map(r => {
+      if (r.kind !== 'saved' || r.q.id !== id) return r
+      return {
+        kind: 'editing', q: r.q,
+        draft: blankDraft(
+          r.q.questionText,
+          r.q.options[0]?.optionText ?? '',
+          r.q.options[1]?.optionText ?? '',
+          r.q.credits,
+        ),
+      } as EditingRow
+    }))
+
+  const cancelEdit = (id: string) =>
+    setRows(prev => prev.map(r =>
+      r.kind === 'editing' && r.q.id === id ? ({ kind: 'saved', q: r.q } as SavedRow) : r,
+    ))
+
+  // ── API actions ─────────────────────────────────────────────────────────────
+  const saveNew = async (key: string) => {
+    const rowIdx = rows.findIndex(r => r.kind === 'new' && r.key === key)
+    const row = rows[rowIdx]
+    if (!row || row.kind !== 'new') return
+    patchDraft(key, { submitting: true, error: null })
+    try {
+      const created = await api.questions.create({
+        matchId,
+        questionText: row.draft.questionText,
+        options: [
+          { id: 1, optionText: row.draft.opt1 },
+          { id: 2, optionText: row.draft.opt2 },
+        ],
+        credits: row.draft.credits,
+        sequence: rowIdx + 1,
+        correctOptionId: null,
+      })
+      setRows(prev => prev.map(r =>
+        r.kind === 'new' && r.key === key ? ({ kind: 'saved', q: created } as SavedRow) : r,
+      ))
+    } catch (e) {
+      patchDraft(key, { submitting: false, error: e instanceof Error ? e.message : 'Save failed' })
+    }
+  }
+
+  const updateEditing = async (id: string) => {
+    const row = rows.find((r): r is EditingRow => r.kind === 'editing' && r.q.id === id)
+    if (!row) return
+    patchDraft(id, { submitting: true, error: null })
+    try {
+      const updated = await api.questions.update({
+        ...row.q,
+        questionText: row.draft.questionText,
+        options: [
+          { id: row.q.options[0]?.id ?? 1, optionText: row.draft.opt1 },
+          { id: row.q.options[1]?.id ?? 2, optionText: row.draft.opt2 },
+        ],
+        credits: row.draft.credits,
+      })
+      setRows(prev => prev.map(r =>
+        r.kind === 'editing' && r.q.id === id ? ({ kind: 'saved', q: updated } as SavedRow) : r,
+      ))
+    } catch (e) {
+      patchDraft(id, { submitting: false, error: e instanceof Error ? e.message : 'Update failed' })
+    }
+  }
+
+  const deleteQuestion = async (id: string) => {
+    const row = rows.find(r => (r.kind === 'saved' || r.kind === 'editing') && r.q.id === id)
+    if (!row || row.kind === 'new') return
+    patchDraft(id, { submitting: true, error: null })
+    try {
+      await api.questions.delete(row.q.id, row.q.matchId)
+      setRows(prev => prev.filter(r => rowKey(r) !== id))
+    } catch (e) {
+      patchDraft(id, { submitting: false, error: e instanceof Error ? e.message : 'Delete failed' })
+    }
+  }
+
+  // ── Derived ─────────────────────────────────────────────────────────────────
+  const savedCount   = rows.filter(r => r.kind === 'saved').length
+  const newCount     = rows.filter(r => r.kind === 'new').length
+  const totalCredits = rows.reduce((sum, r) => {
+    if (r.kind === 'saved')   return sum + r.q.credits
+    if (r.kind === 'editing') return sum + r.q.credits
+    return sum + (r.draft.credits || 0)
+  }, 0)
+  const pickerTemplates = pickerCat === 'All'
+    ? allTemplates
+    : allTemplates.filter(t => t.category === pickerCat)
+
+  // ── Render ───────────────────────────────────────────────────────────────────
+  return (
+    <div className="page-content">
+      {/* Toolbar */}
+      <div className="page-toolbar">
+        <div>
+          <h2 className="matches-page-title">Match Questions</h2>
+          {!loading && (
+            <p className="subtle">
+              {savedCount} saved{newCount > 0 ? ` · ${newCount} unsaved` : ''}
+            </p>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+          <button type="button" className="btn-secondary" onClick={() => setShowPicker(true)}>
+            📋 From Template
+          </button>
+          <button type="button" className="btn-primary" onClick={addBlank}>
+            + Add Question
+          </button>
+        </div>
+      </div>
+
+      {/* Match selector */}
+      <div className="panel" style={{ marginBottom: '1.25rem' }}>
+        <div className="form-group" style={{ marginBottom: match ? '1rem' : 0 }}>
+          <label className="form-label" htmlFor="mq-match">Match</label>
+          <select
+            id="mq-match"
+            className="form-control"
+            value={matchId}
+            onChange={e => setMatchId(e.target.value)}
+          >
+            {allMatches.map(m => (
+              <option key={m.id} value={m.id}>{matchLabel(m)}</option>
+            ))}
+          </select>
+        </div>
+
+        {match && (
+          <div className="mq-match-info">
+            <div className="mq-match-teams">
+              <span className="mq-team">{match.firstBattingTeamName}</span>
+              <span className="mq-vs">vs</span>
+              <span className="mq-team">{match.secondBattingTeamName}</span>
+            </div>
+            <div className="mq-match-meta">
+              <span className="mq-match-date">
+                {new Date(match.matchDate).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}
+              </span>
+              {rows.length > 0 && (
+                <span className="mq-total-credits">
+                  <span className="mq-total-credits-label">Total credits</span>
+                  <span className="qt-credits">{totalCredits} cr</span>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Loading */}
+      {loading && (
+        <div className="panel" style={{ textAlign: 'center', padding: '2.5rem' }}>
+          <p className="subtle">Loading questions...</p>
+        </div>
+      )}
+
+      {/* Load error */}
+      {!loading && loadErr !== null && (
+        <div className="panel" style={{ color: 'var(--rose)' }}>
+          <p style={{ margin: '0 0 0.75rem' }}>{loadErr}</p>
+          <button className="btn-secondary" type="button" onClick={() => void loadQuestions(matchId)}>
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!loading && loadErr === null && rows.length === 0 && (
+        <div className="panel" style={{ textAlign: 'center', padding: '2.5rem' }}>
+          <p className="subtle" style={{ marginBottom: '1rem' }}>No questions yet for this match.</p>
+          <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center' }}>
+            <button type="button" className="btn-secondary" onClick={() => setShowPicker(true)}>
+              📋 Pick from Templates
+            </button>
+            <button type="button" className="btn-primary" onClick={addBlank}>
+              + Add Blank
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Question rows */}
+      {!loading && rows.length > 0 && (
+        <div className="mq-list">
+          {rows.map((row, idx) => {
+            const key = rowKey(row)
+
+            if (row.kind === 'saved') {
+              return (
+                <div key={key} className="mq-card mq-card--saved">
+                  <div className="mq-card-header">
+                    <span className="mq-seq">Q{idx + 1}</span>
+                    <span className="mq-question-text">{row.q.questionText}</span>
+                    <div className="mq-card-actions">
+                      <span className="qt-credits">{row.q.credits} cr</span>
+                      <button
+                        className="btn-icon edit"
+                        type="button"
+                        title="Edit question"
+                        onClick={() => startEdit(row.q.id)}
+                      >✏️</button>
+                      <button
+                        className="btn-icon danger"
+                        type="button"
+                        title="Delete question"
+                        onClick={() => void deleteQuestion(row.q.id)}
+                      >🗑️</button>
+                    </div>
+                  </div>
+                  <div className="mq-options-row">
+                    {row.q.options.map(o => (
+                      <div key={o.id} className="mq-option-chip">
+                        <span className="mq-option-num">{o.id}</span>
+                        {o.optionText}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            }
+
+            // EditingRow or NewRow — both have draft
+            const draft = row.draft
+            const isNew = row.kind === 'new'
+
+            return (
+              <div key={key} className="mq-card mq-card--editing">
+                <div className="mq-edit-header">
+                  <span className={`mq-seq${isNew ? ' mq-seq--new' : ''}`}>
+                    {isNew ? 'New' : `Q${idx + 1}`}
+                  </span>
+                  <span className="mq-edit-label">
+                    {isNew ? 'New Question' : 'Editing'}
+                  </span>
+                </div>
+
+                <div className="mq-edit-body">
+                  <div className="form-group">
+                    <label className="form-label">Question</label>
+                    <input
+                      className="form-control"
+                      type="text"
+                      placeholder="Enter question text..."
+                      value={draft.questionText}
+                      disabled={draft.submitting}
+                      onChange={e => patchDraft(key, { questionText: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label">Option 1</label>
+                      <input
+                        className="form-control"
+                        type="text"
+                        placeholder="Option 1"
+                        value={draft.opt1}
+                        disabled={draft.submitting}
+                        onChange={e => patchDraft(key, { opt1: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Option 2</label>
+                      <input
+                        className="form-control"
+                        type="text"
+                        placeholder="Option 2"
+                        value={draft.opt2}
+                        disabled={draft.submitting}
+                        onChange={e => patchDraft(key, { opt2: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{ maxWidth: '180px' }}>
+                    <label className="form-label">Credits</label>
+                    <input
+                      className="form-control"
+                      type="number"
+                      min={1}
+                      step={1}
+                      placeholder="10"
+                      value={draft.credits === 0 ? '' : draft.credits}
+                      disabled={draft.submitting}
+                      onChange={e => patchDraft(key, { credits: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+
+                  {draft.error !== null && (
+                    <p style={{ color: 'var(--rose)', fontSize: '0.85rem', margin: 0 }}>
+                      {draft.error}
+                    </p>
+                  )}
+                </div>
+
+                <div className="mq-edit-footer">
+                  {isNew ? (
+                    <>
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        disabled={draft.submitting}
+                        onClick={() => removeNew(key)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        disabled={draft.submitting || !draft.questionText.trim() || !draft.opt1.trim() || !draft.opt2.trim()}
+                        onClick={() => void saveNew(key)}
+                      >
+                        {draft.submitting ? 'Saving…' : 'Save'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="btn-icon danger"
+                        title="Delete question"
+                        disabled={draft.submitting}
+                        onClick={() => void deleteQuestion(key)}
+                      >
+                        🗑️
+                      </button>
+                      <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          disabled={draft.submitting}
+                          onClick={() => cancelEdit(key)}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          disabled={draft.submitting || !draft.questionText.trim() || !draft.opt1.trim() || !draft.opt2.trim()}
+                          onClick={() => void updateEditing(key)}
+                        >
+                          {draft.submitting ? 'Saving…' : 'Update'}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Template picker modal */}
+      {showPicker && (
+        <div
+          className="modal-overlay"
+          onClick={e => { if (e.target === e.currentTarget) setShowPicker(false) }}
+        >
+          <div className="modal modal-wide">
+            <div className="modal-header">
+              <h3 className="modal-title">Pick a Question Template</h3>
+              <button
+                className="modal-close-btn"
+                type="button"
+                onClick={() => setShowPicker(false)}
+              >✕</button>
+            </div>
+
+            <div className="modal-body" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
+              {/* Category filter */}
+              <div className="match-filter-tabs" style={{ marginBottom: '1rem', flexWrap: 'wrap' }}>
+                {TEMPLATE_CATS.map(cat => (
+                  <button
+                    key={cat}
+                    type="button"
+                    className={`match-filter-tab${pickerCat === cat ? ' active' : ''}`}
+                    onClick={() => setPickerCat(cat)}
+                    style={{ fontSize: '0.78rem', padding: '0.3rem 0.7rem', minHeight: '30px' }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {/* Template list */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                {pickerTemplates.map(t => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className="mq-template-row"
+                    onClick={() => addFromTemplate(t)}
+                  >
+                    <div className="mq-template-body">
+                      <span className="mq-template-q">{applyTeams(t.questionText, match)}</span>
+                      <span className="mq-template-opts">
+                        {t.options.map(o => applyTeams(o.optionText, match)).join('  ·  ')}
+                      </span>
+                    </div>
+                    <span className="qt-credits" style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                      {t.credits} cr
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

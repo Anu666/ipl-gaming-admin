@@ -1111,3 +1111,237 @@
   opacity: 0.85;
 }
 
+/* ── Match Questions ────────────────────────────────────────────────────────── */
+
+.mq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mq-card {
+  border-radius: 12px;
+  border: 1px solid #ffffff14;
+  background: var(--surface1);
+  overflow: hidden;
+}
+
+.mq-card--saved {
+  transition: border-color 0.15s;
+}
+
+.mq-card--saved:hover {
+  border-color: #ffffff28;
+}
+
+.mq-card--editing {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 1px var(--teal);
+}
+
+/* Saved row header */
+.mq-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+}
+
+.mq-seq {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  background: #ffffff14;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.mq-seq--new {
+  background: #14b8a620;
+  color: var(--teal);
+}
+
+.mq-question-text {
+  flex: 1;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  min-width: 0;
+}
+
+.mq-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+/* Options chips */
+.mq-options-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0 1rem 0.9rem 3.75rem;
+}
+
+.mq-option-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.65rem 0.25rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid #ffffff18;
+  background: #ffffff0a;
+  font-size: 0.82rem;
+  opacity: 0.8;
+}
+
+.mq-option-num {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: #ffffff18;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Edit form */
+.mq-edit-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem 0;
+}
+
+.mq-edit-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  opacity: 0.55;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mq-edit-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+
+.mq-edit-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #ffffff0f;
+  background: #ffffff04;
+}
+
+/* Template picker rows */
+.mq-template-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.7rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid #ffffff10;
+  background: #ffffff06;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  font: inherit;
+}
+
+.mq-template-row:hover {
+  background: #ffffff10;
+  border-color: var(--teal);
+}
+
+.mq-template-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.mq-template-q {
+  font-size: 0.88rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mq-template-opts {
+  font-size: 0.77rem;
+  opacity: 0.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Match info strip */
+.mq-match-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #ffffff0f;
+}
+
+.mq-match-teams {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.mq-team {
+  color: var(--paper);
+}
+
+.mq-vs {
+  font-size: 0.75rem;
+  font-weight: 500;
+  opacity: 0.55;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.mq-match-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.mq-match-date {
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+.mq-total-credits {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.mq-total-credits-label {
+  font-size: 0.78rem;
+  opacity: 0.6;
+}
+
+

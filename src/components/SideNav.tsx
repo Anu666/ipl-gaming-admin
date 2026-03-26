@@ -10,9 +10,10 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { page: 'home', label: 'Dashboard', icon: '⊞' },
   { page: 'matches', label: 'Matches', icon: '🏏' },
-  { page: 'questions', label: 'Questions', icon: '❓' },
+  { page: 'questions', label: 'Question Templates', icon: '❓' },
+  { page: 'match-questions', label: 'Match Questions', icon: '📝' },
   { page: 'users', label: 'Users', icon: '👤', superAdminOnly: true },
-  { page: 'transactions', label: 'Transactions', icon: '💳' },
+  { page: 'transactions', label: 'Transactions', icon: '💳', superAdminOnly: true },
 ]
 
 interface Props {

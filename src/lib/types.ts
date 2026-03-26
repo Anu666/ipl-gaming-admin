@@ -1,5 +1,5 @@
 // ── Page navigation ──────────────────────────────────────────────────────────
-export type Page = 'home' | 'matches' | 'users' | 'questions' | 'transactions'
+export type Page = 'home' | 'matches' | 'users' | 'questions' | 'match-questions' | 'transactions'
 
 // ── Enums ────────────────────────────────────────────────────────────────────
 export const UserRole = {
