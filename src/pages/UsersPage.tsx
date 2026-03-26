@@ -250,8 +250,9 @@ export function UsersPage() {
                         >{copied === user.id ? '✓' : '🔑'}</button>
                         <button
                           className="btn-icon danger"
-                          title="Delete user"
+                          title={user.role === UserRole.SuperAdmin ? 'Super Admin users cannot be deleted' : 'Delete user'}
                           type="button"
+                          disabled={user.role === UserRole.SuperAdmin}
                           onClick={() => setModal({ type: 'delete', user })}
                         >🗑️</button>
                       </div>
@@ -296,27 +297,37 @@ export function UsersPage() {
                 <button className="modal-close-btn" onClick={closeModal} type="button">✕</button>
               </div>
               <div className="modal-body">
-                <p>
-                  Are you sure you want to permanently delete{' '}
-                  <strong>{modal.user.name}</strong>?
-                </p>
-                <p className="subtle">This action cannot be undone.</p>
+                {modal.user.role === UserRole.SuperAdmin ? (
+                  <p style={{ color: 'var(--rose)' }}>
+                    <strong>{modal.user.name}</strong> is a Super Admin and cannot be deleted.
+                  </p>
+                ) : (
+                  <>
+                    <p>
+                      Are you sure you want to permanently delete{' '}
+                      <strong>{modal.user.name}</strong>?
+                    </p>
+                    <p className="subtle">This action cannot be undone.</p>
+                  </>
+                )}
                 {formError !== null && (
                   <p style={{ color: 'var(--rose)', marginTop: '0.5rem' }}>{formError}</p>
                 )}
               </div>
               <div className="modal-footer">
                 <button className="btn-secondary" onClick={closeModal} disabled={submitting} type="button">
-                  Cancel
+                  {modal.user.role === UserRole.SuperAdmin ? 'Close' : 'Cancel'}
                 </button>
-                <button
-                  className="btn-danger"
-                  onClick={() => void handleDelete(modal.user)}
-                  disabled={submitting}
-                  type="button"
-                >
-                  {submitting ? 'Deleting…' : 'Delete'}
-                </button>
+                {modal.user.role !== UserRole.SuperAdmin && (
+                  <button
+                    className="btn-danger"
+                    onClick={() => void handleDelete(modal.user)}
+                    disabled={submitting}
+                    type="button"
+                  >
+                    {submitting ? 'Deleting…' : 'Delete'}
+                  </button>
+                )}
               </div>
             </div>
           )}
