@@ -1,0 +1,252 @@
+[
+  {
+    "id": 1,
+    "category": "Toss",
+    "questionText": "Who will win the toss?",
+    "options": [
+      { "id": 1, "optionText": "Team 1" },
+      { "id": 2, "optionText": "Team 2" }
+    ],
+    "credits": 10
+  },
+  {
+    "id": 2,
+    "category": "Toss",
+    "questionText": "What will the toss winner choose?",
+    "options": [
+      { "id": 1, "optionText": "Bat" },
+      { "id": 2, "optionText": "Bowl" }
+    ],
+    "credits": 10
+  },
+  {
+    "id": 3,
+    "category": "Batting",
+    "questionText": "Who will score the most runs for Team 1?",
+    "options": [
+      { "id": 1, "optionText": "Top-order batsman" },
+      { "id": 2, "optionText": "Middle/lower-order batsman" }
+    ],
+    "credits": 20
+  },
+  {
+    "id": 4,
+    "category": "Batting",
+    "questionText": "Who will score the most runs for Team 2?",
+    "options": [
+      { "id": 1, "optionText": "Top-order batsman" },
+      { "id": 2, "optionText": "Middle/lower-order batsman" }
+    ],
+    "credits": 20
+  },
+  {
+    "id": 5,
+    "category": "Batting",
+    "questionText": "Will Team 1 score more than 180 runs?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 15
+  },
+  {
+    "id": 6,
+    "category": "Batting",
+    "questionText": "Will Team 2 score more than 180 runs?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 15
+  },
+  {
+    "id": 7,
+    "category": "Batting",
+    "questionText": "Will there be a century in this match?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 20
+  },
+  {
+    "id": 8,
+    "category": "Batting",
+    "questionText": "Will there be a fifty in the first 6 overs (powerplay)?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 15
+  },
+  {
+    "id": 9,
+    "category": "Bowling",
+    "questionText": "Who will take the most wickets for Team 1?",
+    "options": [
+      { "id": 1, "optionText": "Pace bowler" },
+      { "id": 2, "optionText": "Spin bowler" }
+    ],
+    "credits": 20
+  },
+  {
+    "id": 10,
+    "category": "Bowling",
+    "questionText": "Who will take the most wickets for Team 2?",
+    "options": [
+      { "id": 1, "optionText": "Pace bowler" },
+      { "id": 2, "optionText": "Spin bowler" }
+    ],
+    "credits": 20
+  },
+  {
+    "id": 11,
+    "category": "Bowling",
+    "questionText": "Will there be a hat-trick in this match?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 25
+  },
+  {
+    "id": 12,
+    "category": "Bowling",
+    "questionText": "Will a bowler take 3 or more wickets in this match?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 15
+  },
+  {
+    "id": 13,
+    "category": "Match Outcome",
+    "questionText": "Who will win the match?",
+    "options": [
+      { "id": 1, "optionText": "Team 1" },
+      { "id": 2, "optionText": "Team 2" }
+    ],
+    "credits": 30
+  },
+  {
+    "id": 14,
+    "category": "Match Outcome",
+    "questionText": "Will the match go to the last over?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 20
+  },
+  {
+    "id": 15,
+    "category": "Match Outcome",
+    "questionText": "Will the winning margin be more than 30 runs or 4 wickets?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 15
+  },
+  {
+    "id": 16,
+    "category": "Match Outcome",
+    "questionText": "Will there be a Super Over?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 25
+  },
+  {
+    "id": 17,
+    "category": "Fielding",
+    "questionText": "Will there be a run-out in this match?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 15
+  },
+  {
+    "id": 18,
+    "category": "Fielding",
+    "questionText": "Will there be more than 2 dropped catches in this match?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 15
+  },
+  {
+    "id": 19,
+    "category": "Powerplay",
+    "questionText": "Will Team 1 score more than 50 runs in the powerplay?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 15
+  },
+  {
+    "id": 20,
+    "category": "Powerplay",
+    "questionText": "Will Team 2 score more than 50 runs in the powerplay?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 15
+  },
+  {
+    "id": 21,
+    "category": "Powerplay",
+    "questionText": "Will a wicket fall in the first 3 overs?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 15
+  },
+  {
+    "id": 22,
+    "category": "Death Overs",
+    "questionText": "Will the last 4 overs produce more than 50 runs (Team 1 innings)?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 20
+  },
+  {
+    "id": 23,
+    "category": "Death Overs",
+    "questionText": "Will the last 4 overs produce more than 50 runs (Team 2 innings)?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 20
+  },
+  {
+    "id": 24,
+    "category": "Sixes & Fours",
+    "questionText": "Will there be more than 15 sixes in total?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 15
+  },
+  {
+    "id": 25,
+    "category": "Sixes & Fours",
+    "questionText": "Will there be more than 25 fours in total?",
+    "options": [
+      { "id": 1, "optionText": "Yes" },
+      { "id": 2, "optionText": "No" }
+    ],
+    "credits": 15
+  }
+]

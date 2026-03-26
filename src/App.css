@@ -980,3 +980,134 @@
   }
 }
 
+/* ── Question Templates ── */
+.qt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.qt-card {
+  background: #ffffff0d;
+  border: 1px solid #ffffff1a;
+  border-radius: 0.85rem;
+  overflow: hidden;
+  transition: background 0.15s;
+}
+
+.qt-card:hover {
+  background: #ffffff14;
+}
+
+.qt-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  background: transparent;
+  border: none;
+  color: var(--paper);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  cursor: pointer;
+  text-align: left;
+}
+
+.qt-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.qt-seq {
+  font-size: 0.75rem;
+  opacity: 0.35;
+  flex-shrink: 0;
+  width: 1.75rem;
+  text-align: right;
+}
+
+.qt-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.qt-category-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  width: fit-content;
+}
+
+.qt-question-text {
+  font-size: 0.92rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qt-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.qt-credits {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--sun);
+  white-space: nowrap;
+}
+
+.qt-chevron {
+  font-size: 0.85rem;
+  opacity: 0.45;
+  display: inline-block;
+  transition: transform 0.18s;
+}
+
+.qt-options {
+  border-top: 1px solid #ffffff12;
+  padding: 0.65rem 1rem 0.85rem 3.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.qt-option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.qt-option-id {
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  border: 1px solid #ffffff28;
+  background: #ffffff0d;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.qt-option-text {
+  font-size: 0.88rem;
+  opacity: 0.85;
+}
+

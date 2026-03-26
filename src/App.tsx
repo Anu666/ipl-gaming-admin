@@ -8,7 +8,8 @@ import type { Page, User } from './lib/types'
 import { UserRole } from './lib/types'
 import { HomePage } from './pages/HomePage'
 import { MatchesPage } from './pages/MatchesPage'
-import { UsersPage } from './pages/UsersPage.tsx'
+import { QuestionsPage } from './pages/QuestionsPage'
+import { UsersPage } from './pages/UsersPage'
 
 const PAGE_LABELS: Record<Page, string> = {
   home: 'Dashboard',
@@ -136,11 +137,7 @@ function App() {
           {safePage === 'home' && <HomePage onNavigate={setCurrentPage} />}
           {safePage === 'users' && isSuperAdmin && <UsersPage />}
           {safePage === 'matches' && <MatchesPage />}
-          {safePage === 'questions' && (
-            <div className="page-content">
-              <div className="panel"><p className="panel-title">Questions</p><p className="subtle">Coming soon</p></div>
-            </div>
-          )}
+          {safePage === 'questions' && <QuestionsPage />}
           {safePage === 'transactions' && (
             <div className="page-content">
               <div className="panel"><p className="panel-title">Transactions</p><p className="subtle">Coming soon</p></div>
