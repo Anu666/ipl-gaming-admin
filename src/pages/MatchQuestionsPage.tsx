@@ -94,6 +94,7 @@ export function MatchQuestionsPage() {
   const [matchStatus, setMatchStatus] = useState<MatchStatusRecord | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
   const [settingReady, setSettingReady] = useState(false)
+  const [calculatingBets, setCalculatingBets] = useState(false)
 
   const match = allMatches.find(m => m.id === matchId)
 
@@ -140,6 +141,22 @@ export function MatchQuestionsPage() {
       alert(e instanceof Error ? e.message : 'Failed to update match status')
     } finally {
       setSettingReady(false)
+    }
+  }
+
+  // ── Calculate Betting Stats ─────────────────────────────────────────────
+  async function handleCalculateBets() {
+    setCalculatingBets(true)
+    try {
+      await api.bettingStats.calculate(matchId)
+      // Reload questions to surface fresh bettingStats
+      await loadQuestions(matchId)
+      // Status is now BetsUpdated on the backend — reflect locally
+      setMatchStatus(prev => prev ? { ...prev, status: MatchStatusValue.BetsUpdated } : prev)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to calculate betting stats')
+    } finally {
+      setCalculatingBets(false)
     }
   }
 
@@ -263,6 +280,7 @@ export function MatchQuestionsPage() {
   const picksStatus = matchStatus?.status ?? MatchStatusValue.NotStarted
   const isLocked = picksStatus !== MatchStatusValue.NotStarted
   const canSetReady = picksStatus === MatchStatusValue.NotStarted
+  const canCalculateBets = picksStatus === MatchStatusValue.PicksClosed || picksStatus === MatchStatusValue.BetsUpdated
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
@@ -291,6 +309,16 @@ export function MatchQuestionsPage() {
             <span className={`picks-status-badge picks-status--${picksStatus}`}>
               {MATCH_STATUS_LABELS[picksStatus]}
             </span>
+          )}
+          {canCalculateBets && (
+            <button
+              type="button"
+              className="calculate-bets-btn"
+              disabled={calculatingBets}
+              onClick={() => void handleCalculateBets()}
+            >
+              {calculatingBets ? 'Calculating…' : '📊 Calculate Bets'}
+            </button>
           )}
           {!isLocked && (
             <>
@@ -391,6 +419,7 @@ export function MatchQuestionsPage() {
             const key = rowKey(row)
 
             if (row.kind === 'saved') {
+              const stats = row.q.bettingStats ?? null
               return (
                 <div key={key} className="mq-card mq-card--saved">
                   <div className="mq-card-header">
@@ -424,6 +453,75 @@ export function MatchQuestionsPage() {
                       </div>
                     ))}
                   </div>
+
+                  {/* Betting stats panel */}
+                  {stats && (
+                    <div className="mq-betting-stats">
+                      <div className="mq-betting-stats-header">
+                        <span className="mq-betting-stats-title">📊 Betting Stats</span>
+                        <span className="mq-bets-timestamp">
+                          Updated {new Date(stats.lastCalculatedAt).toLocaleString('en-IN', {
+                            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                      <div className="mq-betting-summary">
+                        <span className="mq-stat-pill">{stats.totalEligible} eligible</span>
+                        <span className="mq-stat-pill mq-stat-pill--green">{stats.totalVotes} answered</span>
+                        {stats.unansweredCount > 0 && (
+                          <span className="mq-stat-pill mq-stat-pill--red">
+                            {stats.unansweredCount} unanswered (auto-lost)
+                          </span>
+                        )}
+                      </div>
+                      <div className="mq-option-stats-list">
+                        {stats.optionStats.map(os => {
+                          const option = row.q.options.find(o => o.id === os.optionId)
+                          const pct = stats.totalEligible > 0
+                            ? (os.voteCount / stats.totalEligible) * 100
+                            : 0
+                          const displayVoters = os.voters.slice(0, 5)
+                          const extraVoters = os.voters.length - displayVoters.length
+                          return (
+                            <div key={os.optionId} className="mq-option-stat">
+                              <div className="mq-option-stat-row">
+                                <span className="mq-option-stat-num">{os.optionId}</span>
+                                <span className="mq-option-stat-name">
+                                  {option?.optionText ?? `Option ${os.optionId}`}
+                                </span>
+                                <span className="mq-option-stat-count">
+                                  {os.voteCount} / {stats.totalEligible}
+                                </span>
+                                {os.potentialWinCredits > 0 ? (
+                                  <span className="mq-option-stat-win">
+                                    +{os.potentialWinCredits.toFixed(2)} cr bonus
+                                  </span>
+                                ) : (
+                                  <span className="mq-option-stat-nowin">No bonus</span>
+                                )}
+                              </div>
+                              <div className="mq-option-bar-track">
+                                <div
+                                  className={`mq-option-bar-fill mq-option-bar-fill--${os.optionId}`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              {displayVoters.length > 0 && (
+                                <div className="mq-voter-chips">
+                                  {displayVoters.map(v => (
+                                    <span key={v.userId} className="mq-voter-chip">{v.userName}</span>
+                                  ))}
+                                  {extraVoters > 0 && (
+                                    <span className="mq-voter-chip mq-voter-chip--more">+{extraVoters} more</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             }

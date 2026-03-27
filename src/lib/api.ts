@@ -145,5 +145,11 @@ const matchStatuses = {
     request<MatchStatusRecord>('/api/matchstatus/UpdateMatchStatus', { method: 'PUT', body: JSON.stringify(body) }),
 }
 
+// ── Betting Stats ─────────────────────────────────────────────────────────────
+const bettingStats = {
+  calculate: (matchId: string) =>
+    request<{ message: string }>(`/api/BettingStats/Calculate/${matchId}`, { method: 'POST' }),
+}
+
 // ── Exported API object ───────────────────────────────────────────────────────
-export const api = { users, matches, questions, userAnswers, transactions, matchStatuses }
+export const api = { users, matches, questions, userAnswers, transactions, matchStatuses, bettingStats }

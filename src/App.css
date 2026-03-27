@@ -1442,4 +1442,200 @@
   opacity: 0.6;
 }
 
+/* ── Calculate Bets button ── */
+.calculate-bets-btn {
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid #219ebc66;
+  background: #219ebc18;
+  color: #6dd5ed;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  min-height: 36px;
+}
+
+.calculate-bets-btn:hover:not(:disabled) {
+  background: #219ebc30;
+  border-color: #219ebc99;
+}
+
+.calculate-bets-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Betting stats panel (inside question card) ── */
+.mq-betting-stats {
+  border-top: 1px solid #ffffff0e;
+  padding: 0.85rem 1rem 1rem;
+  background: #ffffff04;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.mq-betting-stats-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.mq-betting-stats-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.55;
+}
+
+.mq-bets-timestamp {
+  font-size: 0.7rem;
+  opacity: 0.35;
+}
+
+/* Summary pills */
+.mq-betting-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.mq-stat-pill {
+  font-size: 0.73rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid #ffffff1a;
+  background: #ffffff09;
+  opacity: 0.85;
+}
+
+.mq-stat-pill--green {
+  border-color: #7ad99540;
+  background: #7ad99510;
+  color: var(--mint);
+  opacity: 1;
+}
+
+.mq-stat-pill--red {
+  border-color: #ef476f40;
+  background: #ef476f10;
+  color: var(--rose);
+  opacity: 1;
+}
+
+/* Per-option stats */
+.mq-option-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.mq-option-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+
+.mq-option-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.81rem;
+}
+
+.mq-option-stat-num {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  border: 1px solid #ffffff22;
+  background: #ffffff10;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.mq-option-stat-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.88;
+}
+
+.mq-option-stat-count {
+  font-size: 0.75rem;
+  opacity: 0.5;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.mq-option-stat-win {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--mint);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.mq-option-stat-nowin {
+  font-size: 0.72rem;
+  opacity: 0.3;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Vote bar */
+.mq-option-bar-track {
+  height: 5px;
+  border-radius: 999px;
+  background: #ffffff12;
+  overflow: hidden;
+}
+
+.mq-option-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+.mq-option-bar-fill--1 {
+  background: linear-gradient(90deg, var(--teal), #3a86ff);
+}
+
+.mq-option-bar-fill--2 {
+  background: linear-gradient(90deg, var(--sun), var(--flame));
+}
+
+/* Voter chips */
+.mq-voter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.05rem;
+}
+
+.mq-voter-chip {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid #ffffff14;
+  background: #ffffff08;
+  opacity: 0.7;
+}
+
+.mq-voter-chip--more {
+  opacity: 0.4;
+  font-style: italic;
+  border-style: dashed;
+}
+
 
