@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import matchesJson from '../assets/json/matches.json'
 import templatesJson from '../assets/json/question-templates.json'
 import { api } from '../lib/api'
+import { MatchStatusValue, MATCH_STATUS_LABELS, type MatchStatusRecord } from '../lib/types'
 import type { Question } from '../lib/types'
 
 // ── Local types ───────────────────────────────────────────────────────────────
@@ -90,6 +91,9 @@ export function MatchQuestionsPage() {
   const [loadErr, setLoadErr] = useState<string | null>(null)
   const [showPicker, setShowPicker] = useState(false)
   const [pickerCat, setPickerCat] = useState('All')
+  const [matchStatus, setMatchStatus] = useState<MatchStatusRecord | null>(null)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [settingReady, setSettingReady] = useState(false)
 
   const match = allMatches.find(m => m.id === matchId)
 
@@ -110,6 +114,34 @@ export function MatchQuestionsPage() {
   }, [])
 
   useEffect(() => { void loadQuestions(matchId) }, [matchId, loadQuestions])
+
+  // ── Load match status when match changes ────────────────────────────────────
+  useEffect(() => {
+    if (!matchId) return
+    setMatchStatus(null)
+    api.matchStatuses.getByMatchId(matchId)
+      .then(s => setMatchStatus(s))
+      .catch(() => setMatchStatus(null))
+  }, [matchId])
+
+  // ── Set Ready for Picks ─────────────────────────────────────────────────────
+  async function handleSetReadyForPicks() {
+    setSettingReady(true)
+    try {
+      let updated: MatchStatusRecord
+      if (matchStatus) {
+        updated = await api.matchStatuses.update({ ...matchStatus, status: MatchStatusValue.ReadyForPicks })
+      } else {
+        updated = await api.matchStatuses.create({ matchId, status: MatchStatusValue.ReadyForPicks })
+      }
+      setMatchStatus(updated)
+      setShowConfirm(false)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to update match status')
+    } finally {
+      setSettingReady(false)
+    }
+  }
 
   // ── Draft state helpers ─────────────────────────────────────────────────────
   const patchDraft = (key: string, patch: Partial<EditDraft>) =>
@@ -228,6 +260,10 @@ export function MatchQuestionsPage() {
     ? allTemplates
     : allTemplates.filter(t => t.category === pickerCat)
 
+  const picksStatus = matchStatus?.status ?? MatchStatusValue.NotStarted
+  const isLocked = picksStatus !== MatchStatusValue.NotStarted
+  const canSetReady = picksStatus === MatchStatusValue.NotStarted
+
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <div className="page-content">
@@ -242,12 +278,30 @@ export function MatchQuestionsPage() {
           )}
         </div>
         <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-          <button type="button" className="btn-secondary" onClick={() => setShowPicker(true)}>
-            📋 From Template
-          </button>
-          <button type="button" className="btn-primary" onClick={addBlank}>
-            + Add Question
-          </button>
+          {canSetReady && savedCount > 0 && (
+            <button
+              type="button"
+              className="ready-for-picks-btn"
+              onClick={() => setShowConfirm(true)}
+            >
+              ✓ Set Ready for Picks
+            </button>
+          )}
+          {!canSetReady && (
+            <span className={`picks-status-badge picks-status--${picksStatus}`}>
+              {MATCH_STATUS_LABELS[picksStatus]}
+            </span>
+          )}
+          {!isLocked && (
+            <>
+              <button type="button" className="btn-secondary" onClick={() => setShowPicker(true)}>
+                📋 From Template
+              </button>
+              <button type="button" className="btn-primary" onClick={addBlank}>
+                + Add Question
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -289,6 +343,13 @@ export function MatchQuestionsPage() {
         )}
       </div>
 
+      {/* Locked notice */}
+      {isLocked && (
+        <div className="mq-locked-notice">
+          🔒 Questions are locked — match status is <strong>{MATCH_STATUS_LABELS[picksStatus]}</strong>. Only editable when status is <em>Not Started</em>.
+        </div>
+      )}
+
       {/* Loading */}
       {loading && (
         <div className="panel" style={{ textAlign: 'center', padding: '2.5rem' }}>
@@ -310,14 +371,16 @@ export function MatchQuestionsPage() {
       {!loading && loadErr === null && rows.length === 0 && (
         <div className="panel" style={{ textAlign: 'center', padding: '2.5rem' }}>
           <p className="subtle" style={{ marginBottom: '1rem' }}>No questions yet for this match.</p>
-          <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center' }}>
-            <button type="button" className="btn-secondary" onClick={() => setShowPicker(true)}>
-              📋 Pick from Templates
-            </button>
-            <button type="button" className="btn-primary" onClick={addBlank}>
-              + Add Blank
-            </button>
-          </div>
+          {!isLocked && (
+            <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center' }}>
+              <button type="button" className="btn-secondary" onClick={() => setShowPicker(true)}>
+                📋 Pick from Templates
+              </button>
+              <button type="button" className="btn-primary" onClick={addBlank}>
+                + Add Blank
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -335,18 +398,22 @@ export function MatchQuestionsPage() {
                     <span className="mq-question-text">{row.q.questionText}</span>
                     <div className="mq-card-actions">
                       <span className="qt-credits">{row.q.credits} cr</span>
-                      <button
-                        className="btn-icon edit"
-                        type="button"
-                        title="Edit question"
-                        onClick={() => startEdit(row.q.id)}
-                      >✏️</button>
-                      <button
-                        className="btn-icon danger"
-                        type="button"
-                        title="Delete question"
-                        onClick={() => void deleteQuestion(row.q.id)}
-                      >🗑️</button>
+                      {!isLocked && (
+                        <>
+                          <button
+                            className="btn-icon edit"
+                            type="button"
+                            title="Edit question"
+                            onClick={() => startEdit(row.q.id)}
+                          >✏️</button>
+                          <button
+                            className="btn-icon danger"
+                            type="button"
+                            title="Delete question"
+                            onClick={() => void deleteQuestion(row.q.id)}
+                          >🗑️</button>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="mq-options-row">
@@ -546,6 +613,64 @@ export function MatchQuestionsPage() {
                   </button>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Confirmation modal */}
+      {showConfirm && (
+        <div
+          className="modal-overlay"
+          onClick={e => { if (e.target === e.currentTarget && !settingReady) setShowConfirm(false) }}
+        >
+          <div className="modal">
+            <div className="modal-header">
+              <h3 className="modal-title">Set Ready for Picks?</h3>
+              <button
+                className="modal-close-btn"
+                type="button"
+                disabled={settingReady}
+                onClick={() => setShowConfirm(false)}
+              >✕</button>
+            </div>
+            <div className="modal-body">
+              <p style={{ margin: '0 0 1rem' }}>
+                Players will be able to submit their picks for:
+              </p>
+              <p style={{ margin: '0 0 0.5rem', fontWeight: 600 }}>
+                {match?.firstBattingTeamCode} vs {match?.secondBattingTeamCode}
+              </p>
+              <div className="confirm-stats">
+                <div className="confirm-stat">
+                  <span className="confirm-stat-value">{savedCount}</span>
+                  <span className="confirm-stat-label">Questions</span>
+                </div>
+                <div className="confirm-stat">
+                  <span className="confirm-stat-value qt-credits">{totalCredits} cr</span>
+                  <span className="confirm-stat-label">Total Credits</span>
+                </div>
+              </div>
+              <p className="subtle" style={{ fontSize: '0.82rem', marginTop: '1rem', marginBottom: 0 }}>
+                This will lock in the questions. Picks can be submitted until the match starts.
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={settingReady}
+                onClick={() => setShowConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="ready-for-picks-btn"
+                disabled={settingReady}
+                onClick={() => void handleSetReadyForPicks()}
+              >
+                {settingReady ? 'Setting…' : '✓ Confirm'}
+              </button>
             </div>
           </div>
         </div>

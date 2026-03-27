@@ -706,6 +706,36 @@
   border-top: 1px solid #ffffff14;
 }
 
+/* Confirmation modal stats */
+.confirm-stats {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.85rem 1rem;
+  background: #ffffff0d;
+  border: 1px solid #ffffff14;
+  border-radius: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.confirm-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.confirm-stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--paper);
+}
+
+.confirm-stat-label {
+  font-size: 0.75rem;
+  opacity: 0.55;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 /* ── Form controls ── */
 .form-row {
   display: grid;
@@ -904,6 +934,8 @@
 .match-card-top {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .match-status-badge {
@@ -919,6 +951,72 @@
 .match-status--past     { background: #ffffff12; border-color: #ffffff22; color: #ffffffaa; }
 .match-status--current  { background: #7ad99522; border-color: #7ad99555; color: var(--mint); }
 .match-status--upcoming { background: #219ebc22; border-color: #219ebc55; color: #6dd5ed; }
+
+/* Picks status badge */
+.picks-status-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  margin-left: auto;
+}
+
+/* 0 NotStarted */
+.picks-status-badge.picks-status--0 { background: #ffffff0d; border-color: #ffffff18; color: #ffffff55; }
+/* 1 ReadyForPicks */
+.picks-status-badge.picks-status--1 { background: #ffb70322; border-color: #ffb70355; color: var(--sun); }
+/* 2 PicksClosed */
+.picks-status-badge.picks-status--2 { background: #ef476f22; border-color: #ef476f55; color: var(--rose); }
+/* 3 BetsUpdated */
+.picks-status-badge.picks-status--3 { background: #219ebc22; border-color: #219ebc55; color: #6dd5ed; }
+/* 4 MatchCompleted */
+.picks-status-badge.picks-status--4 { background: #7ad99522; border-color: #7ad99555; color: var(--mint); }
+/* 5 BetsSettled */
+.picks-status-badge.picks-status--5 { background: #7ad99533; border-color: #7ad99577; color: var(--mint); }
+
+/* Ready for Picks action button */
+.ready-for-picks-btn {
+  margin-top: 0.25rem;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid #ffb70366;
+  background: #ffb70318;
+  color: var(--sun);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  align-self: flex-start;
+}
+
+.ready-for-picks-btn:hover:not(:disabled) {
+  background: #ffb70330;
+  border-color: #ffb70388;
+}
+
+.ready-for-picks-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Locked notice */
+.mq-locked-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  background: #ef476f18;
+  border: 1px solid #ef476f44;
+  border-radius: 8px;
+  color: #ef476f;
+  font-size: 0.875rem;
+}
+.mq-locked-notice strong { color: var(--rose); }
+.mq-locked-notice em { color: #ffffff77; font-style: normal; }
 
 /* Teams row */
 .match-vs-row {

@@ -4,6 +4,7 @@ import type {
   Question,
   UserAnswer,
   Transaction,
+  MatchStatusRecord,
   CreateUserRequest,
   UpdateUserRequest,
   UpdateCreditsRequest,
@@ -133,5 +134,16 @@ const transactions = {
     request<void>(`/api/transactions/DeleteTransaction/${id}/${userId}`, { method: 'DELETE' }),
 }
 
+// ── Match Statuses ────────────────────────────────────────────────────────────
+const matchStatuses = {
+  getAll: () => request<MatchStatusRecord[]>('/api/matchstatus/GetAllMatchStatuses'),
+  getByMatchId: (matchId: string) =>
+    request<MatchStatusRecord>(`/api/matchstatus/GetMatchStatusByMatchId/${matchId}`),
+  create: (body: Omit<MatchStatusRecord, 'id'>) =>
+    request<MatchStatusRecord>('/api/matchstatus/CreateMatchStatus', { method: 'POST', body: JSON.stringify(body) }),
+  update: (body: MatchStatusRecord) =>
+    request<MatchStatusRecord>('/api/matchstatus/UpdateMatchStatus', { method: 'PUT', body: JSON.stringify(body) }),
+}
+
 // ── Exported API object ───────────────────────────────────────────────────────
-export const api = { users, matches, questions, userAnswers, transactions }
+export const api = { users, matches, questions, userAnswers, transactions, matchStatuses }

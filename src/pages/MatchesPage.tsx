@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import matchesJson from '../assets/json/matches.json'
 import { api } from '../lib/api'
+import { MatchStatusValue, MATCH_STATUS_LABELS, type MatchStatusRecord } from '../lib/types'
 
 // Local interface to avoid the casing mismatch between
 // the bundled JSON (firstBattingTeamID) and the TS Match type (firstBattingTeamId).
@@ -19,10 +20,10 @@ interface MatchItem {
   matchCommenceStartDate: string
 }
 
-type MatchStatus = 'past' | 'current' | 'upcoming'
-type FilterTab = 'all' | MatchStatus
+type ScheduleStatus = 'past' | 'current' | 'upcoming'
+type FilterTab = 'all' | ScheduleStatus
 
-function getStatus(match: MatchItem): MatchStatus {
+function getScheduleStatus(match: MatchItem): ScheduleStatus {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const matchDay = new Date(match.matchDate)
@@ -78,31 +79,60 @@ export function MatchesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<FilterTab>('all')
+  // matchId → MatchStatusRecord (undefined = not yet loaded / not found)
+  const [statusMap, setStatusMap] = useState<Record<string, MatchStatusRecord>>({})
+  // matchId → true while "Set Ready for Picks" is in-flight
+  const [settingReady, setSettingReady] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const staticData = matchesJson as unknown as MatchItem[]
-    if (staticData.length > 0) {
-      setMatches(sortByDate(staticData))
-      setLoading(false)
-    } else {
-      // Fallback: fetch from API when JSON is empty
-      api.matches.getAll()
-        .then(data => setMatches(sortByDate(data as unknown as MatchItem[])))
-        .catch(e => setError(e instanceof Error ? e.message : 'Failed to load matches'))
-        .finally(() => setLoading(false))
-    }
+    const loadMatches = staticData.length > 0
+      ? Promise.resolve(sortByDate(staticData))
+      : api.matches.getAll()
+          .then(data => sortByDate(data as unknown as MatchItem[]))
+
+    loadMatches
+      .then(loaded => {
+        setMatches(loaded)
+        // Fetch all match statuses in parallel
+        return api.matchStatuses.getAll().then(statuses => {
+          const map: Record<string, MatchStatusRecord> = {}
+          for (const s of statuses) map[s.matchId] = s
+          setStatusMap(map)
+        }).catch(() => { /* statuses are optional — ignore errors */ })
+      })
+      .catch(e => setError(e instanceof Error ? e.message : 'Failed to load matches'))
+      .finally(() => setLoading(false))
   }, [])
+
+  async function handleSetReadyForPicks(match: MatchItem) {
+    setSettingReady(prev => ({ ...prev, [match.id]: true }))
+    try {
+      const existing = statusMap[match.id]
+      let updated: MatchStatusRecord
+      if (existing) {
+        updated = await api.matchStatuses.update({ ...existing, status: MatchStatusValue.ReadyForPicks })
+      } else {
+        updated = await api.matchStatuses.create({ matchId: match.id, status: MatchStatusValue.ReadyForPicks })
+      }
+      setStatusMap(prev => ({ ...prev, [match.id]: updated }))
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to update status')
+    } finally {
+      setSettingReady(prev => ({ ...prev, [match.id]: false }))
+    }
+  }
 
   const counts: Record<FilterTab, number> = {
     all:      matches.length,
-    past:     matches.filter(m => getStatus(m) === 'past').length,
-    current:  matches.filter(m => getStatus(m) === 'current').length,
-    upcoming: matches.filter(m => getStatus(m) === 'upcoming').length,
+    past:     matches.filter(m => getScheduleStatus(m) === 'past').length,
+    current:  matches.filter(m => getScheduleStatus(m) === 'current').length,
+    upcoming: matches.filter(m => getScheduleStatus(m) === 'upcoming').length,
   }
 
   const filtered = activeTab === 'all'
     ? matches
-    : matches.filter(m => getStatus(m) === activeTab)
+    : matches.filter(m => getScheduleStatus(m) === activeTab)
 
   return (
     <div className="page-content">
@@ -157,66 +187,71 @@ export function MatchesPage() {
       {!loading && error === null && filtered.length > 0 && (
         <div className="match-grid">
           {filtered.map(match => {
-            const status = getStatus(match)
+            const schedStatus = getScheduleStatus(match)
+            const picksRecord = statusMap[match.id]
+            const picksStatus = picksRecord?.status ?? MatchStatusValue.NotStarted
             const team1Color = TEAM_COLORS[match.firstBattingTeamCode] ?? 'var(--sun)'
             const team2Color = TEAM_COLORS[match.secondBattingTeamCode] ?? 'var(--teal)'
+            const isSettingReady = settingReady[match.id] ?? false
+            const canSetReady = picksStatus === MatchStatusValue.NotStarted
             return (
-              <div key={match.id} className={`match-card match-card--${status}`}>
-                {/* Status badge */}
+              <div key={match.id} className={`match-card match-card--${schedStatus}`}>
+                {/* Top row: schedule + picks status badges */}
                 <div className="match-card-top">
-                  <span className={`match-status-badge match-status--${status}`}>
-                    {status === 'past'
+                  <span className={`match-status-badge match-status--${schedStatus}`}>
+                    {schedStatus === 'past'
                       ? 'Completed'
-                      : status === 'current'
+                      : schedStatus === 'current'
                       ? 'Live Today'
                       : 'Upcoming'}
+                  </span>
+                  <span className={`picks-status-badge picks-status--${picksStatus}`}>
+                    {MATCH_STATUS_LABELS[picksStatus]}
                   </span>
                 </div>
 
                 {/* Teams */}
                 <div className="match-vs-row">
                   <div className="match-team">
-                    <span
-                      className="match-team-code"
-                      style={{ color: team1Color }}
-                    >
+                    <span className="match-team-code" style={{ color: team1Color }}>
                       {match.firstBattingTeamCode}
                     </span>
-                    <span className="match-team-name">
-                      {match.firstBattingTeamName}
-                    </span>
+                    <span className="match-team-name">{match.firstBattingTeamName}</span>
                   </div>
 
                   <span className="match-vs-text">vs</span>
 
                   <div className="match-team match-team--right">
-                    <span
-                      className="match-team-code"
-                      style={{ color: team2Color }}
-                    >
+                    <span className="match-team-code" style={{ color: team2Color }}>
                       {match.secondBattingTeamCode}
                     </span>
-                    <span className="match-team-name">
-                      {match.secondBattingTeamName}
-                    </span>
+                    <span className="match-team-name">{match.secondBattingTeamName}</span>
                   </div>
                 </div>
 
                 {/* Meta info */}
                 <div className="match-meta">
-                  <span className="match-meta-item">
-                    {formatDate(match.matchDate)}
-                  </span>
+                  <span className="match-meta-item">{formatDate(match.matchDate)}</span>
                   <span className="match-meta-item">
                     {formatTime(match.matchTime)}
                     <span className="subtle" style={{ marginLeft: '0.4rem' }}>
                       ({match.gmtMatchTime})
                     </span>
                   </span>
-                  <span className="match-meta-item">
-                    {match.groundName}, {match.city}
-                  </span>
+                  <span className="match-meta-item">{match.groundName}, {match.city}</span>
                 </div>
+
+                {/* Action */}
+                {canSetReady && (
+                  <button
+                    type="button"
+                    className="ready-for-picks-btn"
+                    disabled={isSettingReady}
+                    onClick={() => handleSetReadyForPicks(match)}
+                  >
+                    {isSettingReady ? 'Setting…' : '✓ Set Ready for Picks'}
+                  </button>
+                )}
               </div>
             )
           })}

@@ -126,6 +126,33 @@ export type CreateTransactionRequest = Omit<Transaction, 'id'>
 
 export type UpdateTransactionRequest = Transaction
 
+// ── Match Status ────────────────────────────────────────────────────────────
+export const MatchStatusValue = {
+  NotStarted:    0,
+  ReadyForPicks: 1,
+  PicksClosed:   2,
+  BetsUpdated:   3,
+  MatchCompleted: 4,
+  BetsSettled:   5,
+} as const
+
+export type MatchStatusValue = (typeof MatchStatusValue)[keyof typeof MatchStatusValue]
+
+export const MATCH_STATUS_LABELS: Record<MatchStatusValue, string> = {
+  [MatchStatusValue.NotStarted]:    'Not Started',
+  [MatchStatusValue.ReadyForPicks]: 'Ready for Picks',
+  [MatchStatusValue.PicksClosed]:   'Picks Closed',
+  [MatchStatusValue.BetsUpdated]:   'Bets Updated',
+  [MatchStatusValue.MatchCompleted]: 'Match Completed',
+  [MatchStatusValue.BetsSettled]:   'Bets Settled',
+}
+
+export interface MatchStatusRecord {
+  id: string
+  matchId: string
+  status: MatchStatusValue
+}
+
 export const CreditsOperation = {
   Override: 0,
   Increase: 1,
