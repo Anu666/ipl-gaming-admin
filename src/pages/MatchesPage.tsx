@@ -81,8 +81,6 @@ export function MatchesPage({ onNavigateToMatchQuestions }: { onNavigateToMatchQ
   const [activeTab, setActiveTab] = useState<FilterTab>('all')
   // matchId → MatchStatusRecord (undefined = not yet loaded / not found)
   const [statusMap, setStatusMap] = useState<Record<string, MatchStatusRecord>>({})
-  // matchId → true while "Set Ready for Picks" is in-flight
-  const [settingReady, setSettingReady] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const staticData = matchesJson as unknown as MatchItem[]
@@ -104,24 +102,6 @@ export function MatchesPage({ onNavigateToMatchQuestions }: { onNavigateToMatchQ
       .catch(e => setError(e instanceof Error ? e.message : 'Failed to load matches'))
       .finally(() => setLoading(false))
   }, [])
-
-  async function handleSetReadyForPicks(match: MatchItem) {
-    setSettingReady(prev => ({ ...prev, [match.id]: true }))
-    try {
-      const existing = statusMap[match.id]
-      let updated: MatchStatusRecord
-      if (existing) {
-        updated = await api.matchStatuses.update({ ...existing, status: MatchStatusValue.ReadyForPicks })
-      } else {
-        updated = await api.matchStatuses.create({ matchId: match.id, status: MatchStatusValue.ReadyForPicks })
-      }
-      setStatusMap(prev => ({ ...prev, [match.id]: updated }))
-    } catch (e) {
-      alert(e instanceof Error ? e.message : 'Failed to update status')
-    } finally {
-      setSettingReady(prev => ({ ...prev, [match.id]: false }))
-    }
-  }
 
   const counts: Record<FilterTab, number> = {
     all:      matches.length,
@@ -192,8 +172,6 @@ export function MatchesPage({ onNavigateToMatchQuestions }: { onNavigateToMatchQ
             const picksStatus = picksRecord?.status ?? MatchStatusValue.NotStarted
             const team1Color = TEAM_COLORS[match.firstBattingTeamCode] ?? 'var(--sun)'
             const team2Color = TEAM_COLORS[match.secondBattingTeamCode] ?? 'var(--teal)'
-            const isSettingReady = settingReady[match.id] ?? false
-            const canSetReady = picksStatus === MatchStatusValue.NotStarted
             return (
               <div key={match.id} className={`match-card match-card--${schedStatus}`}>
                 {/* Top row: schedule + picks status badges */}
