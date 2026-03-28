@@ -35,6 +35,7 @@ export function clearApiKey(): void {
 
 // ── Base fetch ────────────────────────────────────────────────────────────────
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'https://localhost:44331'
+// const BASE_URL = 'https://iplgaming20260322122951-axd9czg3bzewdeez.centralus-01.azurewebsites.net'
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const key = getApiKey()
