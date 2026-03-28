@@ -194,29 +194,41 @@ export type UpdateTransactionRequest = Transaction
 
 // ── Match Status ────────────────────────────────────────────────────────────
 export const MatchStatusValue = {
-  NotStarted:    0,
-  ReadyForPicks: 1,
-  PicksClosed:   2,
-  BetsUpdated:   3,
-  MatchCompleted: 4,
-  BetsSettled:   5,
+  NotStarted:           0,
+  ReadyForPicks:        1,
+  PicksClosed:          2,
+  BetsUpdated:          3,
+  MatchCompleted:       4,
+  BetsSettled:          5,
+  TransactionsSettled:  6,
+  Done:                 7,
 } as const
 
 export type MatchStatusValue = (typeof MatchStatusValue)[keyof typeof MatchStatusValue]
 
 export const MATCH_STATUS_LABELS: Record<MatchStatusValue, string> = {
-  [MatchStatusValue.NotStarted]:    'Not Started',
-  [MatchStatusValue.ReadyForPicks]: 'Ready for Picks',
-  [MatchStatusValue.PicksClosed]:   'Picks Closed',
-  [MatchStatusValue.BetsUpdated]:   'Bets Updated',
-  [MatchStatusValue.MatchCompleted]: 'Match Completed',
-  [MatchStatusValue.BetsSettled]:   'Bets Settled',
+  [MatchStatusValue.NotStarted]:          'Not Started',
+  [MatchStatusValue.ReadyForPicks]:       'Ready for Picks',
+  [MatchStatusValue.PicksClosed]:         'Picks Closed',
+  [MatchStatusValue.BetsUpdated]:         'Bets Updated',
+  [MatchStatusValue.MatchCompleted]:      'Match Completed',
+  [MatchStatusValue.BetsSettled]:         'Bets Settled',
+  [MatchStatusValue.TransactionsSettled]: 'Transactions Settled',
+  [MatchStatusValue.Done]:                'Done',
+}
+
+export interface MatchSummaryEntry {
+  userId: string
+  userName: string
+  overallCreditChange: number
+  changes: Change[]
 }
 
 export interface MatchStatusRecord {
   id: string
   matchId: string
   status: MatchStatusValue
+  matchSummary?: MatchSummaryEntry[] | null
 }
 
 export const CreditsOperation = {

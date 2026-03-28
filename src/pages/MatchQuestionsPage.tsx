@@ -108,6 +108,8 @@ export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: bo
   const [loadTxnErr, setLoadTxnErr] = useState<string | null>(null)
   const [completingTxn, setCompletingTxn] = useState<string | null>(null)
   const [completingAll, setCompletingAll] = useState(false)
+  const [markingTransactionsSettled, setMarkingTransactionsSettled] = useState(false)
+  const [markingDone, setMarkingDone] = useState(false)
 
   const match = allMatches.find(m => m.id === matchId)
 
@@ -248,8 +250,11 @@ export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: bo
   }, [])
 
   useEffect(() => {
-    const isBetsSettledNow = (matchStatus?.status ?? MatchStatusValue.NotStarted) === MatchStatusValue.BetsSettled
-    if (isBetsSettledNow && matchId) {
+    const status = matchStatus?.status ?? -1
+    const showTxns = status === MatchStatusValue.BetsSettled
+      || status === MatchStatusValue.TransactionsSettled
+      || status === MatchStatusValue.Done
+    if (showTxns && matchId) {
       void loadTransactions(matchId)
     } else {
       setTransactions([])
@@ -281,6 +286,32 @@ export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: bo
       alert(e instanceof Error ? e.message : 'Failed to complete all transactions')
     } finally {
       setCompletingAll(false)
+    }
+  }
+
+  // ── Mark Transactions Settled ────────────────────────────────────────────────
+  async function handleMarkTransactionsSettled() {
+    setMarkingTransactionsSettled(true)
+    try {
+      const updated = await api.matchStatuses.markTransactionsSettled(matchId)
+      setMatchStatus(updated)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to mark transactions as settled')
+    } finally {
+      setMarkingTransactionsSettled(false)
+    }
+  }
+
+  // ── Mark Done ───────────────────────────────────────────────────────────────
+  async function handleMarkDone() {
+    setMarkingDone(true)
+    try {
+      const updated = await api.matchStatuses.markDone(matchId)
+      setMatchStatus(updated)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to mark match as done')
+    } finally {
+      setMarkingDone(false)
     }
   }
 
@@ -412,6 +443,9 @@ export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: bo
   const canSettleBets = isMatchCompleted
   const isBetsSettled = picksStatus === MatchStatusValue.BetsSettled
   const hasPendingTxns = transactions.some(t => t.status === TransactionStatus.Pending)
+  const allTxnsCompleted = isBetsSettled && transactions.length > 0 && !hasPendingTxns
+  const isTransactionsSettled = picksStatus === MatchStatusValue.TransactionsSettled
+  const isDone = picksStatus === MatchStatusValue.Done
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
@@ -469,6 +503,27 @@ export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: bo
               onClick={() => setShowSettleBetsConfirm(true)}
             >
               💰 Settle Bets
+            </button>
+          )}
+          {isBetsSettled && (
+            <button
+              type="button"
+              className="mark-complete-btn"
+              disabled={markingTransactionsSettled || !allTxnsCompleted}
+              title={!allTxnsCompleted ? 'Complete all transactions first' : undefined}
+              onClick={() => void handleMarkTransactionsSettled()}
+            >
+              {markingTransactionsSettled ? 'Settling…' : '🧾 Mark Transactions Settled'}
+            </button>
+          )}
+          {isTransactionsSettled && (
+            <button
+              type="button"
+              className="settle-bets-btn"
+              disabled={markingDone}
+              onClick={() => void handleMarkDone()}
+            >
+              {markingDone ? 'Finishing…' : '🏆 Mark as Done'}
             </button>
           )}
           {isSuperAdmin && matchStatus !== null && (
@@ -562,6 +617,110 @@ export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: bo
           <button className="btn-secondary" type="button" onClick={() => void loadQuestions(matchId)}>
             Retry
           </button>
+        </div>
+      )}
+
+      {/* Transactions panel (BetsSettled / TransactionsSettled / Done) */}
+      {(isBetsSettled || isTransactionsSettled || isDone) && (
+        <div className="panel txn-panel">
+          <div className="txn-panel-header">
+            <div>
+              <h3 className="txn-panel-title">💳 Transactions</h3>
+              <p className="subtle" style={{ margin: '0.15rem 0 0', fontSize: '0.82rem' }}>
+                {transactions.length} user{transactions.length !== 1 ? 's' : ''}
+                {hasPendingTxns ? ` · ${transactions.filter(t => t.status === TransactionStatus.Pending).length} pending` : ' · all completed'}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ fontSize: '0.82rem' }}
+                disabled={loadingTxns}
+                onClick={() => void loadTransactions(matchId)}
+              >
+                🔄 Refresh
+              </button>
+              {isSuperAdmin && hasPendingTxns && (
+                <button
+                  type="button"
+                  className="settle-bets-btn"
+                  disabled={completingAll || !!completingTxn}
+                  onClick={() => void handleCompleteAll()}
+                >
+                  {completingAll ? 'Completing…' : '✅ Complete All'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {loadingTxns && (
+            <p className="subtle" style={{ textAlign: 'center', padding: '1.5rem 0' }}>Loading transactions…</p>
+          )}
+          {loadTxnErr && (
+            <p style={{ color: 'var(--rose)', margin: 0 }}>{loadTxnErr}</p>
+          )}
+          {!loadingTxns && !loadTxnErr && transactions.length === 0 && (
+            <p className="subtle" style={{ textAlign: 'center', padding: '1.5rem 0' }}>No transactions found for this match.</p>
+          )}
+          {!loadingTxns && transactions.length > 0 && (
+            <div className="txn-table-wrap">
+              <table className="txn-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Net Credits</th>
+                    <th>Breakdown</th>
+                    <th>Status</th>
+                    {isSuperAdmin && <th></th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactions.map(t => {
+                    const isCompleted = t.status === TransactionStatus.Completed
+                    return (
+                      <tr key={t.id} className={`txn-row${isCompleted ? ' txn-row--completed' : ''}`}>
+                        <td className="txn-user">{t.userName}</td>
+                        <td className={`txn-net ${t.overallCreditChange >= 0 ? 'txn-credit--pos' : 'txn-credit--neg'}`}>
+                          {t.overallCreditChange >= 0 ? '+' : ''}{t.overallCreditChange.toFixed(2)} cr
+                        </td>
+                        <td>
+                          <div className="txn-changes">
+                            {t.changes.map(c => (
+                              <span key={c.questionId} className={`txn-change-chip txn-outcome--${c.outcome}`}>
+                                {OUTCOME_LABELS[c.outcome]}
+                                {c.creditChange !== 0 && ` ${c.creditChange >= 0 ? '+' : ''}${c.creditChange.toFixed(2)}`}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`txn-status-badge txn-status--${isCompleted ? 'completed' : 'pending'}`}>
+                            {isCompleted ? '✅ Completed' : '⏳ Pending'}
+                          </span>
+                        </td>
+                        {isSuperAdmin && (
+                          <td>
+                            {!isCompleted && (
+                              <button
+                                type="button"
+                                className="btn-primary"
+                                style={{ fontSize: '0.78rem', padding: '0.28rem 0.65rem' }}
+                                disabled={completingTxn === t.id || completingAll}
+                                onClick={() => void handleCompleteTransaction(t.id)}
+                              >
+                                {completingTxn === t.id ? '…' : 'Complete'}
+                              </button>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -849,110 +1008,6 @@ export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: bo
               </div>
             )
           })}
-        </div>
-      )}
-
-      {/* Transactions panel (BetsSettled) */}
-      {isBetsSettled && (
-        <div className="panel txn-panel">
-          <div className="txn-panel-header">
-            <div>
-              <h3 className="txn-panel-title">💳 Transactions</h3>
-              <p className="subtle" style={{ margin: '0.15rem 0 0', fontSize: '0.82rem' }}>
-                {transactions.length} user{transactions.length !== 1 ? 's' : ''}
-                {hasPendingTxns ? ` · ${transactions.filter(t => t.status === TransactionStatus.Pending).length} pending` : ' · all completed'}
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <button
-                type="button"
-                className="btn-secondary"
-                style={{ fontSize: '0.82rem' }}
-                disabled={loadingTxns}
-                onClick={() => void loadTransactions(matchId)}
-              >
-                🔄 Refresh
-              </button>
-              {isSuperAdmin && hasPendingTxns && (
-                <button
-                  type="button"
-                  className="settle-bets-btn"
-                  disabled={completingAll || !!completingTxn}
-                  onClick={() => void handleCompleteAll()}
-                >
-                  {completingAll ? 'Completing…' : '✅ Complete All'}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {loadingTxns && (
-            <p className="subtle" style={{ textAlign: 'center', padding: '1.5rem 0' }}>Loading transactions…</p>
-          )}
-          {loadTxnErr && (
-            <p style={{ color: 'var(--rose)', margin: 0 }}>{loadTxnErr}</p>
-          )}
-          {!loadingTxns && !loadTxnErr && transactions.length === 0 && (
-            <p className="subtle" style={{ textAlign: 'center', padding: '1.5rem 0' }}>No transactions found for this match.</p>
-          )}
-          {!loadingTxns && transactions.length > 0 && (
-            <div className="txn-table-wrap">
-              <table className="txn-table">
-                <thead>
-                  <tr>
-                    <th>User</th>
-                    <th>Net Credits</th>
-                    <th>Breakdown</th>
-                    <th>Status</th>
-                    {isSuperAdmin && <th></th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {transactions.map(t => {
-                    const isCompleted = t.status === TransactionStatus.Completed
-                    return (
-                      <tr key={t.id} className={`txn-row${isCompleted ? ' txn-row--completed' : ''}`}>
-                        <td className="txn-user">{t.userName}</td>
-                        <td className={`txn-net ${t.overallCreditChange >= 0 ? 'txn-credit--pos' : 'txn-credit--neg'}`}>
-                          {t.overallCreditChange >= 0 ? '+' : ''}{t.overallCreditChange.toFixed(2)} cr
-                        </td>
-                        <td>
-                          <div className="txn-changes">
-                            {t.changes.map(c => (
-                              <span key={c.questionId} className={`txn-change-chip txn-outcome--${c.outcome}`}>
-                                {OUTCOME_LABELS[c.outcome]}
-                                {c.creditChange !== 0 && ` ${c.creditChange >= 0 ? '+' : ''}${c.creditChange.toFixed(2)}`}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td>
-                          <span className={`txn-status-badge txn-status--${isCompleted ? 'completed' : 'pending'}`}>
-                            {isCompleted ? '✅ Completed' : '⏳ Pending'}
-                          </span>
-                        </td>
-                        {isSuperAdmin && (
-                          <td>
-                            {!isCompleted && (
-                              <button
-                                type="button"
-                                className="btn-primary"
-                                style={{ fontSize: '0.78rem', padding: '0.28rem 0.65rem' }}
-                                disabled={completingTxn === t.id || completingAll}
-                                onClick={() => void handleCompleteTransaction(t.id)}
-                              >
-                                {completingTxn === t.id ? '…' : 'Complete'}
-                              </button>
-                            )}
-                          </td>
-                        )}
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
       )}
 

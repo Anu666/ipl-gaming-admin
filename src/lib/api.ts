@@ -158,6 +158,10 @@ const matchStatuses = {
     request<MatchStatusRecord>('/api/matchstatus/UpdateMatchStatus', { method: 'PUT', body: JSON.stringify(body) }),
   markMatchComplete: (matchId: string) =>
     request<MatchStatusRecord>(`/api/matchstatus/MarkMatchComplete/${matchId}`, { method: 'POST' }),
+  markTransactionsSettled: (matchId: string) =>
+    request<MatchStatusRecord>(`/api/matchstatus/MarkTransactionsSettled/${matchId}`, { method: 'POST' }),
+  markDone: (matchId: string) =>
+    request<MatchStatusRecord>(`/api/matchstatus/MarkDone/${matchId}`, { method: 'POST' }),
   overrideStatus: (matchId: string, status: number) =>
     request<MatchStatusRecord>(`/api/matchstatus/OverrideMatchStatus/${matchId}`, { method: 'PUT', body: JSON.stringify({ status }) }),
 }
