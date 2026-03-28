@@ -83,6 +83,32 @@ export interface QuestionBettingStats {
   lastCalculatedAt: string
 }
 
+export const OutcomeType = {
+  Won:      0,
+  Lost:     1,
+  AutoLost: 2,
+  Voided:   3,
+} as const
+
+export type OutcomeType = (typeof OutcomeType)[keyof typeof OutcomeType]
+
+export const OUTCOME_LABELS: Record<OutcomeType, string> = {
+  [OutcomeType.Won]:      'Won',
+  [OutcomeType.Lost]:     'Lost',
+  [OutcomeType.AutoLost]: 'Auto Lost',
+  [OutcomeType.Voided]:   'Voided',
+}
+
+export interface QuestionFinalStats {
+  correctOptionId: number
+  winners: { userId: string; userName: string }[]
+  losers: { userId: string; userName: string }[]
+  autoLost: { userId: string; userName: string }[]
+  isVoided: boolean
+  creditChangePerWinner: number
+  settledAt: string
+}
+
 export interface Question {
   id: string
   matchId: string
@@ -92,11 +118,13 @@ export interface Question {
   sequence: number
   correctOptionId: number | null
   bettingStats?: QuestionBettingStats | null
+  finalStats?: QuestionFinalStats | null
 }
 
 export interface Answer {
   questionId: string
   selectedOption: number
+  isCorrect?: boolean | null
 }
 
 export interface UserAnswer {
@@ -109,6 +137,18 @@ export interface UserAnswer {
 export interface Change {
   questionId: string
   creditChange: number
+  outcome: OutcomeType
+}
+
+export const TransactionStatus = {
+  Pending:   0,
+  Completed: 1,
+} as const
+export type TransactionStatus = (typeof TransactionStatus)[keyof typeof TransactionStatus]
+
+export const TRANSACTION_STATUS_LABELS: Record<TransactionStatus, string> = {
+  [TransactionStatus.Pending]:   'Pending',
+  [TransactionStatus.Completed]: 'Completed',
 }
 
 export interface Transaction {
@@ -117,6 +157,11 @@ export interface Transaction {
   matchId: string
   overallCreditChange: number
   changes: Change[]
+  status: TransactionStatus
+}
+
+export interface TransactionWithUser extends Transaction {
+  userName: string
 }
 
 // ── Request/Response shapes ──────────────────────────────────────────────────

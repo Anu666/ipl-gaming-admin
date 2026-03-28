@@ -4,6 +4,7 @@ import type {
   Question,
   UserAnswer,
   Transaction,
+  TransactionWithUser,
   MatchStatusRecord,
   CreateUserRequest,
   UpdateUserRequest,
@@ -132,12 +133,18 @@ const transactions = {
     request<Transaction[]>(`/api/transactions/GetTransactionsByUserId/${userId}`),
   getByMatchAndUser: (matchId: string, userId: string) =>
     request<Transaction>(`/api/transactions/GetTransactionByMatchAndUser/${matchId}/${userId}`),
+  getByMatch: (matchId: string) =>
+    request<TransactionWithUser[]>(`/api/betsettlement/GetTransactionsByMatch/${matchId}`),
   create: (body: CreateTransactionRequest) =>
     request<Transaction>('/api/transactions/CreateTransaction', { method: 'POST', body: JSON.stringify(body) }),
   update: (body: UpdateTransactionRequest) =>
     request<Transaction>('/api/transactions/UpdateTransaction', { method: 'PUT', body: JSON.stringify(body) }),
   delete: (id: string, userId: string) =>
     request<void>(`/api/transactions/DeleteTransaction/${id}/${userId}`, { method: 'DELETE' }),
+  completeTransaction: (transactionId: string) =>
+    request<{ message: string }>(`/api/betsettlement/CompleteTransaction/${transactionId}`, { method: 'POST' }),
+  completeAll: (matchId: string) =>
+    request<{ message: string; count: number }>(`/api/betsettlement/CompleteAllTransactions/${matchId}`, { method: 'POST' }),
 }
 
 // ── Match Statuses ────────────────────────────────────────────────────────────
@@ -161,5 +168,11 @@ const bettingStats = {
     request<{ message: string }>(`/api/BettingStats/Calculate/${matchId}`, { method: 'POST' }),
 }
 
+// ── Bet Settlement ────────────────────────────────────────────────────────────
+const betSettlement = {
+  settle: (matchId: string) =>
+    request<{ message: string }>(`/api/betsettlement/SettleBets/${matchId}`, { method: 'POST' }),
+}
+
 // ── Exported API object ───────────────────────────────────────────────────────
-export const api = { users, matches, questions, userAnswers, transactions, matchStatuses, bettingStats }
+export const api = { users, matches, questions, userAnswers, transactions, matchStatuses, bettingStats, betSettlement }

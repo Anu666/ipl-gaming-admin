@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import matchesJson from '../assets/json/matches.json'
 import templatesJson from '../assets/json/question-templates.json'
 import { api } from '../lib/api'
-import { MatchStatusValue, MATCH_STATUS_LABELS, type MatchStatusRecord } from '../lib/types'
+import { MatchStatusValue, MATCH_STATUS_LABELS, OUTCOME_LABELS, TransactionStatus, type MatchStatusRecord, type TransactionWithUser } from '../lib/types'
 import type { Question } from '../lib/types'
 
 // ── Local types ───────────────────────────────────────────────────────────────
@@ -102,6 +102,12 @@ export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: bo
   const [pendingOverrideStatus, setPendingOverrideStatus] = useState<MatchStatusValue | null>(null)
   const [settingCorrectAnswer, setSettingCorrectAnswer] = useState<Record<string, boolean>>({})
   const [showSettleBetsConfirm, setShowSettleBetsConfirm] = useState(false)
+  const [settlingBets, setSettlingBets] = useState(false)
+  const [transactions, setTransactions] = useState<TransactionWithUser[]>([])
+  const [loadingTxns, setLoadingTxns] = useState(false)
+  const [loadTxnErr, setLoadTxnErr] = useState<string | null>(null)
+  const [completingTxn, setCompletingTxn] = useState<string | null>(null)
+  const [completingAll, setCompletingAll] = useState(false)
 
   const match = allMatches.find(m => m.id === matchId)
 
@@ -208,6 +214,73 @@ export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: bo
       alert(e instanceof Error ? e.message : 'Failed to set correct answer')
     } finally {
       setSettingCorrectAnswer(prev => ({ ...prev, [questionId]: false }))
+    }
+  }
+
+  // ── Settle Bets ────────────────────────────────────────────────────────────
+  async function handleSettleBets() {
+    setSettlingBets(true)
+    try {
+      await api.betSettlement.settle(matchId)
+      setMatchStatus(prev => prev ? { ...prev, status: MatchStatusValue.BetsSettled } : prev)
+      setShowSettleBetsConfirm(false)
+      // Reload questions to get updated finalStats
+      await loadQuestions(matchId)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to settle bets')
+    } finally {
+      setSettlingBets(false)
+    }
+  }
+
+  // ── Load transactions when BetsSettled ──────────────────────────────────────
+  const loadTransactions = useCallback(async (id: string) => {
+    setLoadingTxns(true)
+    setLoadTxnErr(null)
+    try {
+      const txns = await api.transactions.getByMatch(id)
+      setTransactions(txns.sort((a, b) => a.userName.localeCompare(b.userName)))
+    } catch (e) {
+      setLoadTxnErr(e instanceof Error ? e.message : 'Failed to load transactions')
+    } finally {
+      setLoadingTxns(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    const isBetsSettledNow = (matchStatus?.status ?? MatchStatusValue.NotStarted) === MatchStatusValue.BetsSettled
+    if (isBetsSettledNow && matchId) {
+      void loadTransactions(matchId)
+    } else {
+      setTransactions([])
+    }
+  }, [matchStatus?.status, matchId, loadTransactions])
+
+  // ── Complete single transaction ──────────────────────────────────────────────
+  async function handleCompleteTransaction(transactionId: string) {
+    setCompletingTxn(transactionId)
+    try {
+      await api.transactions.completeTransaction(transactionId)
+      setTransactions(prev =>
+        prev.map(t => t.id === transactionId ? { ...t, status: TransactionStatus.Completed } : t)
+      )
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to complete transaction')
+    } finally {
+      setCompletingTxn(null)
+    }
+  }
+
+  // ── Complete all transactions ────────────────────────────────────────────────
+  async function handleCompleteAll() {
+    setCompletingAll(true)
+    try {
+      await api.transactions.completeAll(matchId)
+      setTransactions(prev => prev.map(t => ({ ...t, status: TransactionStatus.Completed })))
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to complete all transactions')
+    } finally {
+      setCompletingAll(false)
     }
   }
 
@@ -337,6 +410,8 @@ export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: bo
   const savedRows = rows.filter((r): r is SavedRow => r.kind === 'saved')
   const allCorrectAnswersDefined = isMatchCompleted && savedRows.length > 0 && savedRows.every(r => r.q.correctOptionId !== null)
   const canSettleBets = isMatchCompleted
+  const isBetsSettled = picksStatus === MatchStatusValue.BetsSettled
+  const hasPendingTxns = transactions.some(t => t.status === TransactionStatus.Pending)
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
@@ -777,6 +852,110 @@ export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: bo
         </div>
       )}
 
+      {/* Transactions panel (BetsSettled) */}
+      {isBetsSettled && (
+        <div className="panel txn-panel">
+          <div className="txn-panel-header">
+            <div>
+              <h3 className="txn-panel-title">💳 Transactions</h3>
+              <p className="subtle" style={{ margin: '0.15rem 0 0', fontSize: '0.82rem' }}>
+                {transactions.length} user{transactions.length !== 1 ? 's' : ''}
+                {hasPendingTxns ? ` · ${transactions.filter(t => t.status === TransactionStatus.Pending).length} pending` : ' · all completed'}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ fontSize: '0.82rem' }}
+                disabled={loadingTxns}
+                onClick={() => void loadTransactions(matchId)}
+              >
+                🔄 Refresh
+              </button>
+              {isSuperAdmin && hasPendingTxns && (
+                <button
+                  type="button"
+                  className="settle-bets-btn"
+                  disabled={completingAll || !!completingTxn}
+                  onClick={() => void handleCompleteAll()}
+                >
+                  {completingAll ? 'Completing…' : '✅ Complete All'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {loadingTxns && (
+            <p className="subtle" style={{ textAlign: 'center', padding: '1.5rem 0' }}>Loading transactions…</p>
+          )}
+          {loadTxnErr && (
+            <p style={{ color: 'var(--rose)', margin: 0 }}>{loadTxnErr}</p>
+          )}
+          {!loadingTxns && !loadTxnErr && transactions.length === 0 && (
+            <p className="subtle" style={{ textAlign: 'center', padding: '1.5rem 0' }}>No transactions found for this match.</p>
+          )}
+          {!loadingTxns && transactions.length > 0 && (
+            <div className="txn-table-wrap">
+              <table className="txn-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Net Credits</th>
+                    <th>Breakdown</th>
+                    <th>Status</th>
+                    {isSuperAdmin && <th></th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactions.map(t => {
+                    const isCompleted = t.status === TransactionStatus.Completed
+                    return (
+                      <tr key={t.id} className={`txn-row${isCompleted ? ' txn-row--completed' : ''}`}>
+                        <td className="txn-user">{t.userName}</td>
+                        <td className={`txn-net ${t.overallCreditChange >= 0 ? 'txn-credit--pos' : 'txn-credit--neg'}`}>
+                          {t.overallCreditChange >= 0 ? '+' : ''}{t.overallCreditChange.toFixed(2)} cr
+                        </td>
+                        <td>
+                          <div className="txn-changes">
+                            {t.changes.map(c => (
+                              <span key={c.questionId} className={`txn-change-chip txn-outcome--${c.outcome}`}>
+                                {OUTCOME_LABELS[c.outcome]}
+                                {c.creditChange !== 0 && ` ${c.creditChange >= 0 ? '+' : ''}${c.creditChange.toFixed(2)}`}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`txn-status-badge txn-status--${isCompleted ? 'completed' : 'pending'}`}>
+                            {isCompleted ? '✅ Completed' : '⏳ Pending'}
+                          </span>
+                        </td>
+                        {isSuperAdmin && (
+                          <td>
+                            {!isCompleted && (
+                              <button
+                                type="button"
+                                className="btn-primary"
+                                style={{ fontSize: '0.78rem', padding: '0.28rem 0.65rem' }}
+                                disabled={completingTxn === t.id || completingAll}
+                                onClick={() => void handleCompleteTransaction(t.id)}
+                              >
+                                {completingTxn === t.id ? '…' : 'Complete'}
+                              </button>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Template picker modal */}
       {showPicker && (
         <div
@@ -994,7 +1173,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: bo
       {showSettleBetsConfirm && (
         <div
           className="modal-overlay"
-          onClick={e => { if (e.target === e.currentTarget) setShowSettleBetsConfirm(false) }}
+          onClick={e => { if (e.target === e.currentTarget && !settlingBets) setShowSettleBetsConfirm(false) }}
         >
           <div className="modal modal-wide">
             <div className="modal-header">
@@ -1002,6 +1181,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: bo
               <button
                 className="modal-close-btn"
                 type="button"
+                disabled={settlingBets}
                 onClick={() => setShowSettleBetsConfirm(false)}
               >✕</button>
             </div>
@@ -1031,6 +1211,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: bo
               <button
                 type="button"
                 className="btn-secondary"
+                disabled={settlingBets}
                 onClick={() => setShowSettleBetsConfirm(false)}
               >
                 Cancel
@@ -1038,17 +1219,10 @@ export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: bo
               <button
                 type="button"
                 className="settle-bets-btn"
-                onClick={() => {
-                  console.log('Settling bets for match:', matchId, savedRows.map(r => ({
-                    questionId: r.q.id,
-                    questionText: r.q.questionText,
-                    correctOptionId: r.q.correctOptionId,
-                    correctOptionText: r.q.options.find(o => o.id === r.q.correctOptionId)?.optionText,
-                  })))
-                  setShowSettleBetsConfirm(false)
-                }}
+                disabled={settlingBets}
+                onClick={() => void handleSettleBets()}
               >
-                💰 Proceed
+                {settlingBets ? 'Settling…' : '💰 Proceed'}
               </button>
             </div>
           </div>
