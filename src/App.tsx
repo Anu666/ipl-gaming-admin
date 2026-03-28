@@ -11,6 +11,7 @@ import { MatchesPage } from './pages/MatchesPage'
 import { QuestionsPage } from './pages/QuestionsPage'
 import { MatchQuestionsPage } from './pages/MatchQuestionsPage'
 import { UsersPage } from './pages/UsersPage'
+import { TransactionsPage } from './pages/TransactionsPage'
 
 const PAGE_LABELS: Record<Page, string> = {
   home: 'Dashboard',
@@ -27,6 +28,12 @@ function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [userLoading, setUserLoading] = useState(false)
   const [userError, setUserError] = useState<string | null>(null)
+  const [matchQuestionsMatchId, setMatchQuestionsMatchId] = useState<string | undefined>(undefined)
+
+  const handleNavigateToMatchQuestions = (matchId: string) => {
+    setMatchQuestionsMatchId(matchId)
+    setCurrentPage('match-questions')
+  }
 
   const fetchMe = () => {
     if (!isAuthenticated) return
@@ -139,14 +146,10 @@ function App() {
 
           {safePage === 'home' && <HomePage onNavigate={setCurrentPage} />}
           {safePage === 'users' && isSuperAdmin && <UsersPage />}
-          {safePage === 'matches' && <MatchesPage />}
+          {safePage === 'matches' && <MatchesPage onNavigateToMatchQuestions={handleNavigateToMatchQuestions} />}
           {safePage === 'questions' && <QuestionsPage />}
-          {safePage === 'match-questions' && <MatchQuestionsPage isSuperAdmin={isSuperAdmin} />}
-          {safePage === 'transactions' && (
-            <div className="page-content">
-              <div className="panel"><p className="panel-title">Transactions</p><p className="subtle">Coming soon</p></div>
-            </div>
-          )}
+          {safePage === 'match-questions' && <MatchQuestionsPage key={matchQuestionsMatchId} isSuperAdmin={isSuperAdmin} initialMatchId={matchQuestionsMatchId} />}
+          {safePage === 'transactions' && isSuperAdmin && <TransactionsPage />}
         </div>
       </div>
     </div>

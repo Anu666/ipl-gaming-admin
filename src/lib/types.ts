@@ -154,10 +154,12 @@ export const TRANSACTION_STATUS_LABELS: Record<TransactionStatus, string> = {
 export interface Transaction {
   id: string
   userId: string
-  matchId: string
+  matchId?: string | null
   overallCreditChange: number
-  changes: Change[]
+  changes?: Change[] | null
   status: TransactionStatus
+  type: TransactionType
+  createdAt: string
 }
 
 export interface TransactionWithUser extends Transaction {
@@ -232,11 +234,28 @@ export interface MatchStatusRecord {
 }
 
 export const CreditsOperation = {
-  Override: 0,
-  Increase: 1,
+  Deposit: 0,
+  Withdrawal: 1,
+  Override: 2,
 } as const
 
 export type CreditsOperation = (typeof CreditsOperation)[keyof typeof CreditsOperation]
+
+export const TransactionType = {
+  Deposit: 0,
+  Withdrawal: 1,
+  MatchSettlement: 2,
+  AdminOverride: 3,
+} as const
+
+export type TransactionType = (typeof TransactionType)[keyof typeof TransactionType]
+
+export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
+  [TransactionType.Deposit]: 'Deposit',
+  [TransactionType.Withdrawal]: 'Withdrawal',
+  [TransactionType.MatchSettlement]: 'Match Settlement',
+  [TransactionType.AdminOverride]: 'Admin Override',
+}
 
 export interface UpdateCreditsRequest {
   credits: number

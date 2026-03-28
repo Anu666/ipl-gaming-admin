@@ -84,8 +84,8 @@ const genKey = () => `nq-${++_counter}`
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
-  const [matchId, setMatchId] = useState(getDefaultMatchId)
+export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { isSuperAdmin?: boolean; initialMatchId?: string }) {
+  const [matchId, setMatchId] = useState(() => initialMatchId ?? getDefaultMatchId())
   const [rows, setRows] = useState<QuestionRow[]>([])
   const [loading, setLoading] = useState(false)
   const [loadErr, setLoadErr] = useState<string | null>(null)
@@ -686,7 +686,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: bo
                         </td>
                         <td>
                           <div className="txn-changes">
-                            {t.changes.map(c => (
+                            {(t.changes ?? []).map(c => (
                               <span key={c.questionId} className={`txn-change-chip txn-outcome--${c.outcome}`}>
                                 {OUTCOME_LABELS[c.outcome]}
                                 {c.creditChange !== 0 && ` ${c.creditChange >= 0 ? '+' : ''}${c.creditChange.toFixed(2)}`}

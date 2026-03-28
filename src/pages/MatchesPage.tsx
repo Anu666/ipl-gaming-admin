@@ -74,7 +74,7 @@ function sortByDate(arr: MatchItem[]): MatchItem[] {
   )
 }
 
-export function MatchesPage() {
+export function MatchesPage({ onNavigateToMatchQuestions }: { onNavigateToMatchQuestions?: (matchId: string) => void }) {
   const [matches, setMatches] = useState<MatchItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -242,14 +242,14 @@ export function MatchesPage() {
                 </div>
 
                 {/* Action */}
-                {canSetReady && (
+                {onNavigateToMatchQuestions && (
                   <button
                     type="button"
-                    className="ready-for-picks-btn"
-                    disabled={isSettingReady}
-                    onClick={() => handleSetReadyForPicks(match)}
+                    className="btn-secondary"
+                    style={{ marginTop: '0.5rem', width: '100%', fontSize: '0.82rem' }}
+                    onClick={() => onNavigateToMatchQuestions(match.id)}
                   >
-                    {isSettingReady ? 'Setting…' : '✓ Set Ready for Picks'}
+                    Manage Questions →
                   </button>
                 )}
               </div>

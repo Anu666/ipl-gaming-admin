@@ -140,7 +140,7 @@ export function UsersPage() {
     setFormError(null)
     try {
       const updated = await api.users.updateCredits(user.id, { credits, operation })
-      setUsers(prev => prev.map(u => u.id === updated.id ? updated : u))
+      setUsers(prev => prev.map(u => u.id === updated.id ? { ...updated } : u))
       closeModal()
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'Failed to update credits')
@@ -407,13 +407,6 @@ export function UsersPage() {
                     </span>
                   </p>
                 </div>
-                <div className="form-group">
-                  <span className="form-label">Starting Credits</span>
-                  <p style={{ margin: '0.2rem 0 0', color: 'var(--sun)', fontWeight: 600 }}>
-                    {modal.user.credits}
-                  </p>
-                </div>
-
                 <div className="form-group" style={{ marginTop: '0.75rem' }}>
                   <span className="form-label">API Key — share with user</span>
                   <div className="api-key-display">
@@ -536,21 +529,6 @@ function UserFormModal({ mode, user, onSubmit, onCancel, submitting, error }: Us
             </div>
           </div>
 
-          {mode === 'create' && (
-            <div className="form-group">
-              <label className="form-label" htmlFor="uf-credits">Starting Credits</label>
-              <input
-                id="uf-credits"
-                className="form-control"
-                type="number"
-                min={0}
-                step={0.01}
-                value={form.credits}
-                onChange={e => set('credits', parseFloat(e.target.value) || 0)}
-              />
-            </div>
-          )}
-
           <div className="form-group">
             <span className="form-label">Status</span>
             <label className="toggle-label">
@@ -593,19 +571,32 @@ interface CreditsModalProps {
 }
 
 function CreditsModal({ user, onSubmit, onCancel, submitting, error }: CreditsModalProps) {
-  const [operation, setOperation] = useState<CreditsOperation>(CreditsOperation.Increase)
+  const [operation, setOperation] = useState<CreditsOperation>(CreditsOperation.Deposit)
   const [amountStr, setAmountStr] = useState<string>('')
 
   const amount = parseFloat(amountStr) || 0
 
-  const preview = operation === CreditsOperation.Override
-    ? amount
-    : user.credits + amount
+  const preview = (() => {
+    if (operation === CreditsOperation.Deposit) return user.credits + amount
+    if (operation === CreditsOperation.Withdrawal) return user.credits - amount
+    return amount // Override
+  })()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSubmit(amount, operation)
   }
+
+  const handleOperationChange = (op: CreditsOperation) => {
+    setOperation(op)
+    setAmountStr(op === CreditsOperation.Override ? String(user.credits) : '')
+  }
+
+  const inputLabel = operation === CreditsOperation.Deposit
+    ? 'Amount to deposit'
+    : operation === CreditsOperation.Withdrawal
+      ? 'Amount to withdraw'
+      : 'New total balance'
 
   return (
     <div className="modal">
@@ -622,37 +613,50 @@ function CreditsModal({ user, onSubmit, onCancel, submitting, error }: CreditsMo
 
           <div className="form-group">
             <span className="form-label">Operation</span>
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.35rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.35rem', flexWrap: 'wrap' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
                 <input
                   type="radio"
                   name="cr-op"
-                  checked={operation === CreditsOperation.Increase}
-                  onChange={() => { setOperation(CreditsOperation.Increase); setAmountStr('') }}
+                  checked={operation === CreditsOperation.Deposit}
+                  onChange={() => handleOperationChange(CreditsOperation.Deposit)}
                 />
-                Increase by amount
+                Deposit
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="cr-op"
+                  checked={operation === CreditsOperation.Withdrawal}
+                  onChange={() => handleOperationChange(CreditsOperation.Withdrawal)}
+                />
+                Withdrawal
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
                 <input
                   type="radio"
                   name="cr-op"
                   checked={operation === CreditsOperation.Override}
-                  onChange={() => { setOperation(CreditsOperation.Override); setAmountStr(String(user.credits)) }}
+                  onChange={() => handleOperationChange(CreditsOperation.Override)}
                 />
-                Override (set to value)
+                Admin Override
               </label>
             </div>
           </div>
 
+          {operation === CreditsOperation.Override && (
+            <p style={{ fontSize: '0.82rem', color: 'var(--subtle)', marginBottom: '0.75rem', lineHeight: 1.5 }}>
+              Creates 2 transactions: one zeroing the current balance, one setting the new value. Both are type <em>Admin Override</em>.
+            </p>
+          )}
+
           <div className="form-group">
-            <label className="form-label" htmlFor="cr-amount">
-              {operation === CreditsOperation.Override ? 'New value' : 'Amount to add'}
-            </label>
+            <label className="form-label" htmlFor="cr-amount">{inputLabel}</label>
             <input
               id="cr-amount"
               className="form-control"
               type="number"
-              min={operation === CreditsOperation.Override ? 0 : undefined}
+              min={0}
               step={0.01}
               value={amountStr}
               placeholder="0"
@@ -663,8 +667,14 @@ function CreditsModal({ user, onSubmit, onCancel, submitting, error }: CreditsMo
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginTop: '0.25rem' }}>
             <span className="subtle">Current: <span style={{ color: 'var(--sun)', fontWeight: 600 }}>{user.credits}</span></span>
-            <span className="subtle">Result: <span style={{ color: 'var(--mint)', fontWeight: 600 }}>{preview}</span></span>
+            <span className="subtle">Result: <span style={{ color: preview < 0 ? 'var(--rose)' : 'var(--mint)', fontWeight: 600 }}>{Math.round(preview * 100) / 100}</span></span>
           </div>
+
+          {operation === CreditsOperation.Withdrawal && preview < 0 && (
+            <p style={{ color: 'var(--rose)', marginTop: '0.5rem', fontSize: '0.82rem' }}>
+              Warning: withdrawal amount exceeds current balance.
+            </p>
+          )}
 
           {error !== null && (
             <p style={{ color: 'var(--rose)', marginTop: '0.75rem', fontSize: '0.88rem' }}>{error}</p>
