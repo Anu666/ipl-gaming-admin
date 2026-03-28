@@ -101,6 +101,11 @@ const questions = {
     request<Question>('/api/questions/UpdateQuestion', { method: 'PUT', body: JSON.stringify(body) }),
   delete: (id: string, matchId: string) =>
     request<void>(`/api/questions/DeleteQuestion/${id}/${matchId}`, { method: 'DELETE' }),
+  setCorrectAnswer: (questionId: string, matchId: string, correctOptionId: number | null) =>
+    request<Question>(`/api/questions/SetCorrectAnswer/${questionId}/${matchId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ correctOptionId }),
+    }),
 }
 
 // ── User Answers ──────────────────────────────────────────────────────────────
@@ -144,6 +149,10 @@ const matchStatuses = {
     request<MatchStatusRecord>('/api/matchstatus/CreateMatchStatus', { method: 'POST', body: JSON.stringify(body) }),
   update: (body: MatchStatusRecord) =>
     request<MatchStatusRecord>('/api/matchstatus/UpdateMatchStatus', { method: 'PUT', body: JSON.stringify(body) }),
+  markMatchComplete: (matchId: string) =>
+    request<MatchStatusRecord>(`/api/matchstatus/MarkMatchComplete/${matchId}`, { method: 'POST' }),
+  overrideStatus: (matchId: string, status: number) =>
+    request<MatchStatusRecord>(`/api/matchstatus/OverrideMatchStatus/${matchId}`, { method: 'PUT', body: JSON.stringify({ status }) }),
 }
 
 // ── Betting Stats ─────────────────────────────────────────────────────────────

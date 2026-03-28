@@ -1467,6 +1467,177 @@
   cursor: not-allowed;
 }
 
+/* ── Mark Match Complete button ── */
+.mark-complete-btn {
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid #f4a26166;
+  background: #f4a26118;
+  color: #f4a261;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  min-height: 36px;
+}
+
+.mark-complete-btn:hover:not(:disabled) {
+  background: #f4a26130;
+  border-color: #f4a26199;
+}
+
+.mark-complete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Settle Bets button ── */
+.settle-bets-btn {
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid #2dc65366;
+  background: #2dc65318;
+  color: #2dc653;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  min-height: 36px;
+}
+
+.settle-bets-btn:hover:not(:disabled) {
+  background: #2dc65330;
+  border-color: #2dc65399;
+}
+
+.settle-bets-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Danger button (for override confirm) ── */
+.btn-danger {
+  padding: 0.45rem 1rem;
+  border-radius: 6px;
+  border: 1px solid #e55c6c;
+  background: #e55c6c;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 0.15s;
+  min-height: 36px;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #c94b5a;
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Correct answer selector ── */
+.mq-correct-answer-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid #ffffff0e;
+  background: #ffffff04;
+  flex-wrap: wrap;
+}
+
+.mq-correct-answer-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--slate, #94a3b8);
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mq-correct-answer-options {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.mq-correct-option-btn {
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid #ffffff22;
+  background: #ffffff08;
+  color: var(--text, #e2e8f0);
+  font-size: 0.78rem;
+  font-weight: 500;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.mq-correct-option-btn:hover:not(:disabled) {
+  background: #ffffff18;
+  border-color: #ffffff44;
+}
+
+.mq-correct-option-btn--selected {
+  border-color: #2dc653;
+  background: #2dc65322;
+  color: #2dc653;
+  font-weight: 700;
+}
+
+.mq-correct-option-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mq-correct-tick {
+  font-weight: 700;
+}
+
+.mq-correct-unset {
+  font-size: 0.75rem;
+  color: #e55c6c;
+  font-style: italic;
+}
+
+/* ── Settle bets question rows in modal ── */
+.settle-bets-question-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  background: #ffffff06;
+  font-size: 0.82rem;
+}
+
+.settle-bets-q-num {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--slate, #94a3b8);
+  min-width: 2rem;
+  flex-shrink: 0;
+}
+
+.settle-bets-q-text {
+  flex: 1;
+  color: var(--text, #e2e8f0);
+}
+
+.settle-bets-correct-answer {
+  color: #2dc653;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
 /* ── Betting stats panel (inside question card) ── */
 .mq-betting-stats {
   border-top: 1px solid #ffffff0e;

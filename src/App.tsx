@@ -141,7 +141,7 @@ function App() {
           {safePage === 'users' && isSuperAdmin && <UsersPage />}
           {safePage === 'matches' && <MatchesPage />}
           {safePage === 'questions' && <QuestionsPage />}
-          {safePage === 'match-questions' && <MatchQuestionsPage />}
+          {safePage === 'match-questions' && <MatchQuestionsPage isSuperAdmin={isSuperAdmin} />}
           {safePage === 'transactions' && (
             <div className="page-content">
               <div className="panel"><p className="panel-title">Transactions</p><p className="subtle">Coming soon</p></div>

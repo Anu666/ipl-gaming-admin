@@ -84,7 +84,7 @@ const genKey = () => `nq-${++_counter}`
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function MatchQuestionsPage() {
+export function MatchQuestionsPage({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
   const [matchId, setMatchId] = useState(getDefaultMatchId)
   const [rows, setRows] = useState<QuestionRow[]>([])
   const [loading, setLoading] = useState(false)
@@ -95,6 +95,13 @@ export function MatchQuestionsPage() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [settingReady, setSettingReady] = useState(false)
   const [calculatingBets, setCalculatingBets] = useState(false)
+  const [showCompleteConfirm, setShowCompleteConfirm] = useState(false)
+  const [markingComplete, setMarkingComplete] = useState(false)
+  const [overridingStatus, setOverridingStatus] = useState(false)
+  const [showOverrideConfirm, setShowOverrideConfirm] = useState(false)
+  const [pendingOverrideStatus, setPendingOverrideStatus] = useState<MatchStatusValue | null>(null)
+  const [settingCorrectAnswer, setSettingCorrectAnswer] = useState<Record<string, boolean>>({})
+  const [showSettleBetsConfirm, setShowSettleBetsConfirm] = useState(false)
 
   const match = allMatches.find(m => m.id === matchId)
 
@@ -157,6 +164,50 @@ export function MatchQuestionsPage() {
       alert(e instanceof Error ? e.message : 'Failed to calculate betting stats')
     } finally {
       setCalculatingBets(false)
+    }
+  }
+
+  // ── Mark Match as Complete ──────────────────────────────────────────────
+  async function handleMarkMatchComplete() {
+    setMarkingComplete(true)
+    try {
+      const updated = await api.matchStatuses.markMatchComplete(matchId)
+      setMatchStatus(updated)
+      setShowCompleteConfirm(false)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to mark match as complete')
+    } finally {
+      setMarkingComplete(false)
+    }
+  }
+
+  // ── Override Match Status (SuperAdmin) ───────────────────────────────────
+  async function handleOverrideStatus(status: MatchStatusValue) {
+    setOverridingStatus(true)
+    try {
+      const updated = await api.matchStatuses.overrideStatus(matchId, status)
+      setMatchStatus(updated)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to override match status')
+    } finally {
+      setOverridingStatus(false)
+      setShowOverrideConfirm(false)
+      setPendingOverrideStatus(null)
+    }
+  }
+
+  // ── Set Correct Answer ───────────────────────────────────────────────────
+  async function handleSetCorrectAnswer(questionId: string, qMatchId: string, correctOptionId: number) {
+    setSettingCorrectAnswer(prev => ({ ...prev, [questionId]: true }))
+    try {
+      const updated = await api.questions.setCorrectAnswer(questionId, qMatchId, correctOptionId)
+      setRows(prev => prev.map(r =>
+        r.kind === 'saved' && r.q.id === questionId ? ({ kind: 'saved', q: updated } as SavedRow) : r,
+      ))
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to set correct answer')
+    } finally {
+      setSettingCorrectAnswer(prev => ({ ...prev, [questionId]: false }))
     }
   }
 
@@ -281,6 +332,11 @@ export function MatchQuestionsPage() {
   const isLocked = picksStatus !== MatchStatusValue.NotStarted
   const canSetReady = picksStatus === MatchStatusValue.NotStarted
   const canCalculateBets = picksStatus === MatchStatusValue.PicksClosed || picksStatus === MatchStatusValue.BetsUpdated
+  const canMarkComplete = picksStatus === MatchStatusValue.BetsUpdated
+  const isMatchCompleted = picksStatus === MatchStatusValue.MatchCompleted
+  const savedRows = rows.filter((r): r is SavedRow => r.kind === 'saved')
+  const allCorrectAnswersDefined = isMatchCompleted && savedRows.length > 0 && savedRows.every(r => r.q.correctOptionId !== null)
+  const canSettleBets = isMatchCompleted
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
@@ -319,6 +375,45 @@ export function MatchQuestionsPage() {
             >
               {calculatingBets ? 'Calculating…' : '📊 Calculate Bets'}
             </button>
+          )}
+          {canMarkComplete && (
+            <button
+              type="button"
+              className="mark-complete-btn"
+              onClick={() => setShowCompleteConfirm(true)}
+            >
+              🏁 Mark Match as Complete
+            </button>
+          )}
+          {canSettleBets && (
+            <button
+              type="button"
+              className="settle-bets-btn"
+              disabled={!allCorrectAnswersDefined}
+              title={!allCorrectAnswersDefined ? 'Set correct answers for all questions first' : undefined}
+              onClick={() => setShowSettleBetsConfirm(true)}
+            >
+              💰 Settle Bets
+            </button>
+          )}
+          {isSuperAdmin && matchStatus !== null && (
+            <select
+              className="form-control"
+              style={{ width: 'auto', fontSize: '0.82rem', padding: '0.3rem 0.6rem' }}
+              value={picksStatus}
+              disabled={overridingStatus}
+              title="Super Admin: Override match status"
+              onChange={e => {
+                const val = Number(e.target.value) as MatchStatusValue
+                if (val === picksStatus) return
+                setPendingOverrideStatus(val)
+                setShowOverrideConfirm(true)
+              }}
+            >
+              {(Object.entries(MATCH_STATUS_LABELS) as [string, string][]).map(([val, label]) => (
+                <option key={val} value={val}>{label}</option>
+              ))}
+            </select>
           )}
           {!isLocked && (
             <>
@@ -453,6 +548,30 @@ export function MatchQuestionsPage() {
                       </div>
                     ))}
                   </div>
+
+                  {/* Correct answer selector (MatchCompleted only) */}
+                  {isMatchCompleted && (
+                    <div className="mq-correct-answer-row">
+                      <span className="mq-correct-answer-label">✅ Correct Answer:</span>
+                      <div className="mq-correct-answer-options">
+                        {row.q.options.map(o => (
+                          <button
+                            key={o.id}
+                            type="button"
+                            disabled={settingCorrectAnswer[row.q.id]}
+                            className={`mq-correct-option-btn${row.q.correctOptionId === o.id ? ' mq-correct-option-btn--selected' : ''}`}
+                            onClick={() => void handleSetCorrectAnswer(row.q.id, row.q.matchId, o.id)}
+                          >
+                            {row.q.correctOptionId === o.id && <span className="mq-correct-tick">✓ </span>}
+                            {o.optionText}
+                          </button>
+                        ))}
+                        {row.q.correctOptionId === null && (
+                          <span className="mq-correct-unset">Not set</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Betting stats panel */}
                   {stats && (
@@ -768,6 +887,168 @@ export function MatchQuestionsPage() {
                 onClick={() => void handleSetReadyForPicks()}
               >
                 {settingReady ? 'Setting…' : '✓ Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Mark Match Complete confirmation modal */}
+      {showCompleteConfirm && (
+        <div
+          className="modal-overlay"
+          onClick={e => { if (e.target === e.currentTarget && !markingComplete) setShowCompleteConfirm(false) }}
+        >
+          <div className="modal">
+            <div className="modal-header">
+              <h3 className="modal-title">Mark Match as Complete?</h3>
+              <button
+                className="modal-close-btn"
+                type="button"
+                disabled={markingComplete}
+                onClick={() => setShowCompleteConfirm(false)}
+              >✕</button>
+            </div>
+            <div className="modal-body">
+              <p style={{ margin: '0 0 0.75rem' }}>
+                This will set the match status to <strong>Match Completed</strong> for:
+              </p>
+              <p style={{ margin: '0 0 1rem', fontWeight: 600 }}>
+                {match?.firstBattingTeamCode} vs {match?.secondBattingTeamCode}
+              </p>
+              <p className="subtle" style={{ fontSize: '0.82rem', margin: 0 }}>
+                This action requires the current status to be <em>Bets Updated</em>. Ensure all results are finalised before proceeding.
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={markingComplete}
+                onClick={() => setShowCompleteConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="mark-complete-btn"
+                disabled={markingComplete}
+                onClick={() => void handleMarkMatchComplete()}
+              >
+                {markingComplete ? 'Marking…' : '🏁 Confirm Complete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Override status confirmation modal (SuperAdmin) */}
+      {showOverrideConfirm && pendingOverrideStatus !== null && (
+        <div
+          className="modal-overlay"
+          onClick={e => { if (e.target === e.currentTarget && !overridingStatus) { setShowOverrideConfirm(false); setPendingOverrideStatus(null) } }}
+        >
+          <div className="modal">
+            <div className="modal-header">
+              <h3 className="modal-title">Override Match Status?</h3>
+              <button
+                className="modal-close-btn"
+                type="button"
+                disabled={overridingStatus}
+                onClick={() => { setShowOverrideConfirm(false); setPendingOverrideStatus(null) }}
+              >✕</button>
+            </div>
+            <div className="modal-body">
+              <p style={{ margin: '0 0 0.5rem' }}>
+                Change status from <strong>{MATCH_STATUS_LABELS[picksStatus]}</strong> → <strong>{MATCH_STATUS_LABELS[pendingOverrideStatus]}</strong>
+              </p>
+              <p style={{ margin: '0 0 0.75rem', fontWeight: 600 }}>
+                {match?.firstBattingTeamCode} vs {match?.secondBattingTeamCode}
+              </p>
+              <p className="subtle" style={{ fontSize: '0.82rem', margin: 0 }}>
+                This bypasses all validation. Use with caution.
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={overridingStatus}
+                onClick={() => { setShowOverrideConfirm(false); setPendingOverrideStatus(null) }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-danger"
+                disabled={overridingStatus}
+                onClick={() => void handleOverrideStatus(pendingOverrideStatus)}
+              >
+                {overridingStatus ? 'Overriding…' : '⚡ Override'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settle Bets confirmation modal */}
+      {showSettleBetsConfirm && (
+        <div
+          className="modal-overlay"
+          onClick={e => { if (e.target === e.currentTarget) setShowSettleBetsConfirm(false) }}
+        >
+          <div className="modal modal-wide">
+            <div className="modal-header">
+              <h3 className="modal-title">Settle Bets?</h3>
+              <button
+                className="modal-close-btn"
+                type="button"
+                onClick={() => setShowSettleBetsConfirm(false)}
+              >✕</button>
+            </div>
+            <div className="modal-body">
+              <p style={{ margin: '0 0 1rem' }}>
+                Confirm correct answers for <strong>{match?.firstBattingTeamCode} vs {match?.secondBattingTeamCode}</strong>:
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+                {savedRows.map((r, idx) => {
+                  const correctOption = r.q.options.find(o => o.id === r.q.correctOptionId)
+                  return (
+                    <div key={r.q.id} className="settle-bets-question-row">
+                      <span className="settle-bets-q-num">Q{idx + 1}</span>
+                      <span className="settle-bets-q-text">{r.q.questionText}</span>
+                      <span className="settle-bets-correct-answer">
+                        ✅ {correctOption?.optionText ?? '—'}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+              <p className="subtle" style={{ fontSize: '0.82rem', margin: 0 }}>
+                Proceeding will settle bets based on these correct answers.
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setShowSettleBetsConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="settle-bets-btn"
+                onClick={() => {
+                  console.log('Settling bets for match:', matchId, savedRows.map(r => ({
+                    questionId: r.q.id,
+                    questionText: r.q.questionText,
+                    correctOptionId: r.q.correctOptionId,
+                    correctOptionText: r.q.options.find(o => o.id === r.q.correctOptionId)?.optionText,
+                  })))
+                  setShowSettleBetsConfirm(false)
+                }}
+              >
+                💰 Proceed
               </button>
             </div>
           </div>
