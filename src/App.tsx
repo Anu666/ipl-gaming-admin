@@ -24,11 +24,19 @@ const PAGE_LABELS: Record<Page, string> = {
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => !!getApiKey())
-  const [currentPage, setCurrentPage] = useState<Page>('home')
+  const [currentPage, setCurrentPage] = useState<Page>(() => {
+    const saved = localStorage.getItem('admin-page')
+    const valid: Page[] = ['home', 'matches', 'users', 'questions', 'match-questions', 'transactions']
+    return (valid.includes(saved as Page) ? saved : 'home') as Page
+  })
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [userLoading, setUserLoading] = useState(false)
   const [userError, setUserError] = useState<string | null>(null)
   const [matchQuestionsMatchId, setMatchQuestionsMatchId] = useState<string | undefined>(undefined)
+
+  useEffect(() => {
+    localStorage.setItem('admin-page', currentPage)
+  }, [currentPage])
 
   const handleNavigateToMatchQuestions = (matchId: string) => {
     setMatchQuestionsMatchId(matchId)
