@@ -6,6 +6,7 @@ import type {
   Transaction,
   TransactionWithUser,
   MatchStatusRecord,
+  LeaderboardEntry,
   CreateUserRequest,
   UpdateUserRequest,
   UpdateCreditsRequest,
@@ -178,5 +179,10 @@ const betSettlement = {
     request<{ message: string }>(`/api/betsettlement/SettleBets/${matchId}`, { method: 'POST' }),
 }
 
+// ── Leaderboard ──────────────────────────────────────────────────────────────
+const leaderboard = {
+  get: () => request<LeaderboardEntry[]>('/api/leaderboard/GetLeaderboard'),
+}
+
 // ── Exported API object ───────────────────────────────────────────────────────
-export const api = { users, matches, questions, userAnswers, transactions, matchStatuses, bettingStats, betSettlement }
+export const api = { users, matches, questions, userAnswers, transactions, matchStatuses, bettingStats, betSettlement, leaderboard }

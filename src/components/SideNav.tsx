@@ -12,6 +12,7 @@ const NAV_ITEMS: NavItem[] = [
   { page: 'matches', label: 'Matches', icon: '🏏' },
   { page: 'questions', label: 'Question Templates', icon: '❓' },
   { page: 'match-questions', label: 'Match Questions', icon: '📝' },
+  { page: 'leaderboard', label: 'Leaderboard', icon: '🏆' },
   { page: 'users', label: 'Users', icon: '👤', superAdminOnly: true },
   { page: 'transactions', label: 'Transactions', icon: '💳', superAdminOnly: true },
 ]

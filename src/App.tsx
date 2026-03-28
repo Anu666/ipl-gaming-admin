@@ -4,7 +4,7 @@ import { ApiKeyGate } from './components/ApiKeyGate'
 import { SideNav } from './components/SideNav'
 import { TopBar } from './components/TopBar'
 import { getApiKey, clearApiKey, api } from './lib/api'
-import type { Page, User } from './lib/types'
+import type { Page, User, LeaderboardEntry } from './lib/types'
 import { UserRole } from './lib/types'
 import { HomePage } from './pages/HomePage'
 import { MatchesPage } from './pages/MatchesPage'
@@ -12,6 +12,7 @@ import { QuestionsPage } from './pages/QuestionsPage'
 import { MatchQuestionsPage } from './pages/MatchQuestionsPage'
 import { UsersPage } from './pages/UsersPage'
 import { TransactionsPage } from './pages/TransactionsPage'
+import { LeaderboardPage } from './pages/LeaderboardPage'
 
 const PAGE_LABELS: Record<Page, string> = {
   home: 'Dashboard',
@@ -20,23 +21,29 @@ const PAGE_LABELS: Record<Page, string> = {
   'match-questions': 'Match Questions',
   users: 'Users',
   transactions: 'Transactions',
+  leaderboard: 'Leaderboard',
 }
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => !!getApiKey())
   const [currentPage, setCurrentPage] = useState<Page>(() => {
     const saved = localStorage.getItem('admin-page')
-    const valid: Page[] = ['home', 'matches', 'users', 'questions', 'match-questions', 'transactions']
+    const valid: Page[] = ['home', 'matches', 'users', 'questions', 'match-questions', 'transactions', 'leaderboard']
     return (valid.includes(saved as Page) ? saved : 'home') as Page
   })
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [userLoading, setUserLoading] = useState(false)
   const [userError, setUserError] = useState<string | null>(null)
   const [matchQuestionsMatchId, setMatchQuestionsMatchId] = useState<string | undefined>(undefined)
+  const [leaderboardRows, setLeaderboardRows] = useState<LeaderboardEntry[]>([])
 
   useEffect(() => {
     localStorage.setItem('admin-page', currentPage)
   }, [currentPage])
+
+  useEffect(() => {
+    api.leaderboard.get().then(setLeaderboardRows).catch(() => {})
+  }, [])
 
   const handleNavigateToMatchQuestions = (matchId: string) => {
     setMatchQuestionsMatchId(matchId)
@@ -158,6 +165,7 @@ function App() {
           {safePage === 'questions' && <QuestionsPage />}
           {safePage === 'match-questions' && <MatchQuestionsPage key={matchQuestionsMatchId} isSuperAdmin={isSuperAdmin} initialMatchId={matchQuestionsMatchId} />}
           {safePage === 'transactions' && isSuperAdmin && <TransactionsPage />}
+          {safePage === 'leaderboard' && <LeaderboardPage rows={leaderboardRows} />}
         </div>
       </div>
     </div>

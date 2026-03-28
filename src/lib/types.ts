@@ -1,5 +1,5 @@
 // ── Page navigation ──────────────────────────────────────────────────────────
-export type Page = 'home' | 'matches' | 'users' | 'questions' | 'match-questions' | 'transactions'
+export type Page = 'home' | 'matches' | 'users' | 'questions' | 'match-questions' | 'transactions' | 'leaderboard'
 
 // ── Enums ────────────────────────────────────────────────────────────────────
 export const UserRole = {
@@ -260,4 +260,18 @@ export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
 export interface UpdateCreditsRequest {
   credits: number
   operation: CreditsOperation
+}
+
+// ── Leaderboard ──────────────────────────────────────────────────────────────
+export interface LeaderboardEntry {
+  userId: string
+  userName: string
+  totalCreditChange: number
+  correctPredictions: number
+  wrongPredictions: number
+  unansweredQuestions: number
+  voidedQuestions: number
+  matchesPlayed: number
+  winRate: number
+  rank: number
 }
