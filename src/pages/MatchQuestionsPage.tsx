@@ -834,7 +834,6 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
                             ? (os.voteCount / stats.totalEligible) * 100
                             : 0
                           const displayVoters = os.voters
-                          const extraVoters = 0
                           return (
                             <div key={os.optionId} className="mq-option-stat">
                               <div className="mq-option-stat-row">
