@@ -1,5 +1,6 @@
 import type {
   User,
+  UserSummary,
   Match,
   Question,
   UserAnswer,
@@ -65,8 +66,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 // ── Users ─────────────────────────────────────────────────────────────────────
 const users = {
   getMe: () => request<User>('/api/users/me'),
-  getAll: () => request<User[]>('/api/users'),
-  getById: (id: string) => request<User>(`/api/users/${id}`),
+  getAll: () => request<User[]>('/api/users'),  
+  getAllSummary: () => request<UserSummary[]>('/api/users/GetAllUsersForAdmin'),  getById: (id: string) => request<User>(`/api/users/${id}`),
   getByApiKey: (apiKey: string) => request<User>(`/api/users/GetUserByApiKey/${encodeURIComponent(apiKey)}`),
   create: (body: CreateUserRequest) =>
     request<User>('/api/users', { method: 'POST', body: JSON.stringify(body) }),

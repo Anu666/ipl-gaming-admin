@@ -33,6 +33,19 @@ export interface User {
   credits: number
 }
 
+/** User details without ApiKey — returned by GetAllUsersForAdmin (Admin + SuperAdmin) */
+export interface UserSummary {
+  id: string
+  name: string
+  email: string
+  phoneNumber: string
+  isActive: boolean
+  role: UserRole
+  credits: number
+  createdDate: string
+  lastLoginDate: string | null
+}
+
 export interface Match {
   id: string
   matchDate: string

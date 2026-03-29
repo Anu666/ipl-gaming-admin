@@ -1809,6 +1809,37 @@
   border-style: dashed;
 }
 
+.mq-voter-chip--pending {
+  border-color: #ef476f44;
+  color: #ef476fcc;
+  background: #ef476f0d;
+  opacity: 1;
+}
+
+.mq-pickers-chip {
+  border: 1px solid #ffffff22;
+  background: transparent;
+  color: inherit;
+}
+.mq-pickers-chip:hover {
+  border-color: #ffffff44;
+  background: #ffffff0d;
+}
+
+.pickers-section-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.pickers-section-label--done { color: var(--mint); }
+.pickers-section-label--pending { color: var(--rose); }
+
+.pickers-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
 /* ── Transactions panel (BetsSettled) ── */
 .txn-panel {
   margin-top: 1.5rem;

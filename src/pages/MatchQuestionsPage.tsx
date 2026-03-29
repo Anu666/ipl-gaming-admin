@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import matchesJson from '../assets/json/matches.json'
 import templatesJson from '../assets/json/question-templates.json'
 import { api } from '../lib/api'
-import { MatchStatusValue, MATCH_STATUS_LABELS, OUTCOME_LABELS, TransactionStatus, type MatchStatusRecord, type TransactionWithUser } from '../lib/types'
+import { MatchStatusValue, MATCH_STATUS_LABELS, OUTCOME_LABELS, TransactionStatus, type MatchStatusRecord, type TransactionWithUser, type UserAnswer, type UserSummary } from '../lib/types'
 import type { Question } from '../lib/types'
 
 // ── Local types ───────────────────────────────────────────────────────────────
@@ -110,6 +110,9 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
   const [completingAll, setCompletingAll] = useState(false)
   const [markingTransactionsSettled, setMarkingTransactionsSettled] = useState(false)
   const [markingDone, setMarkingDone] = useState(false)
+  const [pickerAnswers, setPickerAnswers] = useState<UserAnswer[] | null>(null)
+  const [pickerAllUsers, setPickerAllUsers] = useState<UserSummary[] | null>(null)
+  const [showPickersModal, setShowPickersModal] = useState(false)
 
   const match = allMatches.find(m => m.id === matchId)
 
@@ -139,6 +142,24 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
       .then(s => setMatchStatus(s))
       .catch(() => setMatchStatus(null))
   }, [matchId])
+
+  // ── Load picker data when status is ReadyForPicks ─────────────────────────
+  useEffect(() => {
+    if (!matchId || matchStatus?.status !== MatchStatusValue.ReadyForPicks) {
+      setPickerAnswers(null)
+      setPickerAllUsers(null)
+      return
+    }
+    Promise.all([
+      api.userAnswers.getByMatch(matchId),
+      api.users.getAllSummary(),
+    ])
+      .then(([answers, users]) => {
+        setPickerAnswers(answers)
+        setPickerAllUsers(users.filter(u => u.isActive))
+      })
+      .catch(() => { setPickerAnswers(null); setPickerAllUsers(null) })
+  }, [matchId, matchStatus?.status])
 
   // ── Set Ready for Picks ─────────────────────────────────────────────────────
   async function handleSetReadyForPicks() {
@@ -474,6 +495,16 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
             <span className={`picks-status-badge picks-status--${picksStatus}`}>
               {MATCH_STATUS_LABELS[picksStatus]}
             </span>
+          )}
+          {picksStatus === MatchStatusValue.ReadyForPicks && pickerAnswers !== null && pickerAllUsers !== null && (
+            <button
+              type="button"
+              className="mq-stat-pill mq-pickers-chip"
+              style={{ fontSize: '0.8rem', cursor: 'pointer' }}
+              onClick={() => setShowPickersModal(true)}
+            >
+              👥 {pickerAnswers.length} / {pickerAllUsers.length} submitted picks
+            </button>
           )}
           {canCalculateBets && (
             <button
@@ -1219,6 +1250,57 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
           </div>
         </div>
       )}
+
+      {/* Pickers modal */}
+      {showPickersModal && pickerAnswers !== null && pickerAllUsers !== null && (() => {
+        const submittedIds = new Set(pickerAnswers.map(a => a.userId))
+        const submitted = pickerAllUsers.filter(u => submittedIds.has(u.id))
+        const notYet = pickerAllUsers.filter(u => !submittedIds.has(u.id))
+        return (
+          <div
+            className="modal-overlay"
+            onClick={e => { if (e.target === e.currentTarget) setShowPickersModal(false) }}
+          >
+            <div className="modal" style={{ maxWidth: '480px', width: '90%' }}>
+              <div className="modal-header">
+                <h3 className="modal-title">👥 Picks Submissions</h3>
+                <button className="modal-close-btn" type="button" onClick={() => setShowPickersModal(false)}>✕</button>
+              </div>
+              <div className="modal-body" style={{ padding: '1rem 1.25rem', maxHeight: '60vh', overflowY: 'auto' }}>
+                <div className="pickers-section">
+                  <p className="pickers-section-label pickers-section-label--done">
+                    ✅ Submitted ({submitted.length})
+                  </p>
+                  {submitted.length === 0
+                    ? <p className="subtle" style={{ fontSize: '0.85rem', margin: '0.25rem 0 0.75rem' }}>No submissions yet.</p>
+                    : <div className="pickers-list">
+                        {submitted.map(u => (
+                          <span key={u.id} className="mq-voter-chip">{u.name}</span>
+                        ))}
+                      </div>
+                  }
+                </div>
+                <div className="pickers-section" style={{ marginTop: '1.1rem' }}>
+                  <p className="pickers-section-label pickers-section-label--pending">
+                    ⏳ Yet to submit ({notYet.length})
+                  </p>
+                  {notYet.length === 0
+                    ? <p className="subtle" style={{ fontSize: '0.85rem', margin: '0.25rem 0 0' }}>Everyone has submitted!</p>
+                    : <div className="pickers-list">
+                        {notYet.map(u => (
+                          <span key={u.id} className="mq-voter-chip mq-voter-chip--pending">{u.name}</span>
+                        ))}
+                      </div>
+                  }
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn-secondary" onClick={() => setShowPickersModal(false)}>Close</button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Settle Bets confirmation modal */}
       {showSettleBetsConfirm && (
