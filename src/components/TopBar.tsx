@@ -20,7 +20,7 @@ export function TopBar({ onLogout, pageName, userName, userRole }: Props) {
       <h2 className="topbar-title">{pageName}</h2>
       <div className="topbar-right">
         {userName !== undefined && (
-          <div className="topbar-user">
+          <div className="topbar-user topbar-user--desktop">
             {userRole !== undefined && (
               <span
                 className="topbar-role-badge"
@@ -33,7 +33,7 @@ export function TopBar({ onLogout, pageName, userName, userRole }: Props) {
           </div>
         )}
         <button className="logout-btn" onClick={onLogout} type="button">
-          Clear API Key
+          Sign out
         </button>
       </div>
     </header>

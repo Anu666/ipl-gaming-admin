@@ -439,10 +439,60 @@
   .topbar {
     padding: 0.85rem 1rem;
   }
+
+  /* Hide username/role on mobile — just show sign out */
+  .topbar-user--desktop {
+    display: none;
+  }
+
+  /* Extra bottom padding so content doesn't hide behind the bottom nav */
+  .page-content {
+    padding: 1rem 1rem 5.5rem;
+  }
+
+  /* Toolbar wraps: title on top, actions below */
+  .page-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+
+  /* Make the inline-flex action groups wrap naturally */
+  .page-toolbar > *:last-child {
+    flex-wrap: wrap;
+  }
+
+  /* Form 2-column → 1-column */
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* Match grid already 1 col at 900px — ensure it at 640px too */
+  .match-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Quick links: 1 column */
+  .quick-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Stat grid stays 2 cols on mobile */
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
+@media (max-width: 400px) {
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
 /* ── TopBar user info ── */
-.topbar-user {
+.topbar-user,
+.topbar-user--desktop {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -1966,5 +2016,73 @@
   background: #7ad99520;
   border: 1px solid #7ad99550;
   color: var(--mint);
+}
+
+/* ── Mobile bottom navigation bar ── */
+.bottom-nav {
+  display: none; /* hidden on desktop */
+}
+
+@media (max-width: 640px) {
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: linear-gradient(180deg, #111f3b 0%, #1a1531 100%);
+    border-top: 1px solid #ffffff22;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: env(safe-area-inset-bottom, 0px); /* iPhone home bar */
+  }
+
+  .bottom-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bottom-nav-item {
+    flex: 1;
+    min-width: 3.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.18rem;
+    padding: 0.55rem 0.25rem 0.6rem;
+    background: transparent;
+    border: none;
+    border-top: 2px solid transparent;
+    color: var(--paper);
+    opacity: 0.5;
+    cursor: pointer;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    transition: opacity 0.15s, border-color 0.15s;
+  }
+
+  .bottom-nav-item:hover {
+    opacity: 0.75;
+  }
+
+  .bottom-nav-item.active {
+    opacity: 1;
+    border-top-color: var(--teal);
+    color: #6dd5ed;
+  }
+
+  .bottom-nav-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  .bottom-nav-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 4rem;
+  }
 }
 
