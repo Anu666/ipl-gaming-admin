@@ -833,8 +833,8 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
                           const pct = stats.totalEligible > 0
                             ? (os.voteCount / stats.totalEligible) * 100
                             : 0
-                          const displayVoters = os.voters.slice(0, 5)
-                          const extraVoters = os.voters.length - displayVoters.length
+                          const displayVoters = os.voters
+                          const extraVoters = 0
                           return (
                             <div key={os.optionId} className="mq-option-stat">
                               <div className="mq-option-stat-row">
@@ -864,9 +864,6 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
                                   {displayVoters.map(v => (
                                     <span key={v.userId} className="mq-voter-chip">{v.userName}</span>
                                   ))}
-                                  {extraVoters > 0 && (
-                                    <span className="mq-voter-chip mq-voter-chip--more">+{extraVoters} more</span>
-                                  )}
                                 </div>
                               )}
                             </div>
