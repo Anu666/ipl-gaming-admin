@@ -256,7 +256,7 @@ export function UsersPage() {
                         {USER_ROLE_LABELS[user.role]}
                       </span>
                     </td>
-                    <td><span className="credits-val">{user.credits}</span></td>
+                    <td><span className="credits-val">{user.credits.toFixed(2)}</span></td>
                     <td>
                       <span className={user.isActive ? 'badge badge-active' : 'badge badge-inactive'}>
                         {user.isActive ? 'Active' : 'Inactive'}
@@ -666,8 +666,8 @@ function CreditsModal({ user, onSubmit, onCancel, submitting, error }: CreditsMo
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginTop: '0.25rem' }}>
-            <span className="subtle">Current: <span style={{ color: 'var(--sun)', fontWeight: 600 }}>{user.credits}</span></span>
-            <span className="subtle">Result: <span style={{ color: preview < 0 ? 'var(--rose)' : 'var(--mint)', fontWeight: 600 }}>{Math.round(preview * 100) / 100}</span></span>
+            <span className="subtle">Current: <span style={{ color: 'var(--sun)', fontWeight: 600 }}>{user.credits.toFixed(2)}</span></span>
+            <span className="subtle">Result: <span style={{ color: preview < 0 ? 'var(--rose)' : 'var(--mint)', fontWeight: 600 }}>{preview.toFixed(2)}</span></span>
           </div>
 
           {operation === CreditsOperation.Withdrawal && preview < 0 && (

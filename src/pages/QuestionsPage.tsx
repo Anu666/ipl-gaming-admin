@@ -93,7 +93,7 @@ export function QuestionsPage() {
                   </div>
                 </div>
                 <div className="qt-header-right">
-                  <span className="qt-credits">{template.credits} cr</span>
+                  <span className="qt-credits">{template.credits.toFixed(2)} cr</span>
                   <span className="qt-chevron" style={{ transform: isExpanded ? 'rotate(180deg)' : undefined }}>
                     ▾
                   </span>

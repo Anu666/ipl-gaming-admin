@@ -619,7 +619,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
               {rows.length > 0 && (
                 <span className="mq-total-credits">
                   <span className="mq-total-credits-label">Total credits</span>
-                  <span className="qt-credits">{totalCredits} cr</span>
+                  <span className="qt-credits">{totalCredits.toFixed(2)} cr</span>
                 </span>
               )}
             </div>
@@ -786,7 +786,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
                     <span className="mq-seq">Q{idx + 1}</span>
                     <span className="mq-question-text">{row.q.questionText}</span>
                     <div className="mq-card-actions">
-                      <span className="qt-credits">{row.q.credits} cr</span>
+                      <span className="qt-credits">{row.q.credits.toFixed(2)} cr</span>
                       {!isLocked && (
                         <>
                           <button
@@ -1086,7 +1086,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
                       </span>
                     </div>
                     <span className="qt-credits" style={{ marginLeft: 'auto', flexShrink: 0 }}>
-                      {t.credits} cr
+                      {t.credits.toFixed(2)} cr
                     </span>
                   </button>
                 ))}
@@ -1124,7 +1124,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
                   <span className="confirm-stat-label">Questions</span>
                 </div>
                 <div className="confirm-stat">
-                  <span className="confirm-stat-value qt-credits">{totalCredits} cr</span>
+                  <span className="confirm-stat-value qt-credits">{totalCredits.toFixed(2)} cr</span>
                   <span className="confirm-stat-label">Total Credits</span>
                 </div>
               </div>
