@@ -1567,6 +1567,31 @@
   cursor: not-allowed;
 }
 
+/* ── Archive Match button ── */
+.archive-match-btn {
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid #9b87f566;
+  background: #9b87f518;
+  color: #b399ff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  min-height: 36px;
+}
+
+.archive-match-btn:hover:not(:disabled) {
+  background: #9b87f530;
+  border-color: #9b87f599;
+}
+
+.archive-match-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* ── Danger button (for override confirm) ── */
 .btn-danger {
   padding: 0.45rem 1rem;

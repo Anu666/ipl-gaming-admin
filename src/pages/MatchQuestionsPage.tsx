@@ -482,7 +482,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
   const allTxnsCompleted = isBetsSettled && transactions.length > 0 && !hasPendingTxns
   const isTransactionsSettled = picksStatus === MatchStatusValue.TransactionsSettled
   const isDone = picksStatus === MatchStatusValue.Done
-  const isArchived = picksStatus === MatchStatusValue.Archived
+  // const isArchived = picksStatus === MatchStatusValue.Archived
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
