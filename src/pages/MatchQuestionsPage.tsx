@@ -110,6 +110,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
   const [completingAll, setCompletingAll] = useState(false)
   const [markingTransactionsSettled, setMarkingTransactionsSettled] = useState(false)
   const [markingDone, setMarkingDone] = useState(false)
+  const [archiving, setArchiving] = useState(false)
   const [pickerAnswers, setPickerAnswers] = useState<UserAnswer[] | null>(null)
   const [pickerAllUsers, setPickerAllUsers] = useState<UserSummary[] | null>(null)
   const [showPickersModal, setShowPickersModal] = useState(false)
@@ -336,6 +337,20 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
     }
   }
 
+  // ── Archive Match ─────────────────────────────────────────────────────────────
+  async function handleArchive() {
+    if (!confirm('Archive this match? It will be hidden from players.')) return
+    setArchiving(true)
+    try {
+      const updated = await api.matchStatuses.archive(matchId)
+      setMatchStatus(updated)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to archive match')
+    } finally {
+      setArchiving(false)
+    }
+  }
+
   // ── Draft state helpers ─────────────────────────────────────────────────────
   const patchDraft = (key: string, patch: Partial<EditDraft>) =>
     setRows(prev => prev.map(r => {
@@ -467,6 +482,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
   const allTxnsCompleted = isBetsSettled && transactions.length > 0 && !hasPendingTxns
   const isTransactionsSettled = picksStatus === MatchStatusValue.TransactionsSettled
   const isDone = picksStatus === MatchStatusValue.Done
+  const isArchived = picksStatus === MatchStatusValue.Archived
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
@@ -555,6 +571,16 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
               onClick={() => void handleMarkDone()}
             >
               {markingDone ? 'Finishing…' : '🏆 Mark as Done'}
+            </button>
+          )}
+          {isDone && (
+            <button
+              type="button"
+              className="archive-match-btn"
+              disabled={archiving}
+              onClick={() => void handleArchive()}
+            >
+              {archiving ? 'Archiving…' : '🗄️ Archive Match'}
             </button>
           )}
           {isSuperAdmin && matchStatus !== null && (

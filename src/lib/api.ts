@@ -164,6 +164,8 @@ const matchStatuses = {
     request<MatchStatusRecord>(`/api/matchstatus/MarkTransactionsSettled/${matchId}`, { method: 'POST' }),
   markDone: (matchId: string) =>
     request<MatchStatusRecord>(`/api/matchstatus/MarkDone/${matchId}`, { method: 'POST' }),
+  archive: (matchId: string) =>
+    request<MatchStatusRecord>(`/api/matchstatus/MarkArchived/${matchId}`, { method: 'POST' }),
   overrideStatus: (matchId: string, status: number) =>
     request<MatchStatusRecord>(`/api/matchstatus/OverrideMatchStatus/${matchId}`, { method: 'PUT', body: JSON.stringify({ status }) }),
 }
