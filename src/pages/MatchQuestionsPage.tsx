@@ -111,6 +111,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
   const [markingDone, setMarkingDone] = useState(false)
   const [archiving, setArchiving] = useState(false)
   const [recalculatingLeaderboard, setRecalculatingLeaderboard] = useState(false)
+  const [revertingTransactions, setRevertingTransactions] = useState(false)
   const [pickerAnswers, setPickerAnswers] = useState<UserAnswer[] | null>(null)
   const [pickerAllUsers, setPickerAllUsers] = useState<UserSummary[] | null>(null)
   const [showPickersModal, setShowPickersModal] = useState(false)
@@ -363,6 +364,48 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
       alert(e instanceof Error ? e.message : 'Failed to recalculate leaderboard')
     } finally {
       setRecalculatingLeaderboard(false)
+    }
+  }
+
+  // ── Revert Transactions ───────────────────────────────────────────────────────
+  async function handleRevertTransactions() {
+    if (!confirm('⚠️ WARNING: This will revert ALL completed transactions for this match, restore user credits, delete all transactions, clear question results, and reset match status to "Match Completed".\n\n⚠️ IMPORTANT: This operation is NOT fully atomic. If it fails midway, database may be in inconsistent state.\n\n⚠️ Ensure no other operations are running on this match.\n\nAre you absolutely sure you want to proceed?')) return
+    setRevertingTransactions(true)
+    try {
+      const result = await api.betSettlement.revertTransactions(matchId)
+      await loadQuestions(matchId)
+      setTransactions([])
+      const updatedStatus = await api.matchStatuses.getByMatchId(matchId)
+      setMatchStatus(updatedStatus)
+      
+      let alertMessage = `✅ ${result.message}\n\n`
+      alertMessage += `• Completed transactions reverted: ${result.completedReverted}\n`
+      alertMessage += `• Total transactions deleted: ${result.totalDeleted}\n`
+      alertMessage += `• Questions cleared: ${result.questionsCleared}\n`
+      alertMessage += `• Total credits reverted: ${result.totalCreditsReverted.toFixed(2)} cr`
+      
+      if (result.hasWarnings && result.warnings.length > 0) {
+        alertMessage += '\n\n⚠️ WARNINGS:\n' + result.warnings.slice(0, 5).join('\n')
+        if (result.warnings.length > 5) {
+          alertMessage += `\n... and ${result.warnings.length - 5} more warnings`
+        }
+        alertMessage += '\n\n⚠️ Please verify user credits and match data!'
+      }
+      
+      if (result.skippedUsers > 0 || result.failedDeletes > 0 || result.failedQuestions > 0) {
+        alertMessage += `\n\n⚠️ ISSUES DETECTED:\n`
+        if (result.skippedUsers > 0) alertMessage += `• ${result.skippedUsers} user(s) not found (transactions skipped)\n`
+        if (result.failedDeletes > 0) alertMessage += `• ${result.failedDeletes} transaction deletion(s) failed\n`
+        if (result.failedQuestions > 0) alertMessage += `• ${result.failedQuestions} question update(s) failed\n`
+        alertMessage += '\n⚠️ Manual cleanup may be required!'
+      }
+      
+      alert(alertMessage)
+    } catch (e) {
+      const errorMsg = e instanceof Error ? e.message : 'Failed to revert transactions'
+      alert(`❌ ERROR: ${errorMsg}\n\n⚠️ Database may be in inconsistent state. Check server logs and verify data integrity!`)
+    } finally {
+      setRevertingTransactions(false)
     }
   }
 
@@ -658,6 +701,29 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
               onClick={() => void handleRecalculateLeaderboard()}
             >
               {recalculatingLeaderboard ? 'Recalculating…' : '🔄 Recalculate Leaderboard'}
+            </button>
+          )}
+          {isSuperAdmin && (isBetsSettled || isTransactionsSettled || isDone) && (
+            <button
+              type="button"
+              className="btn-danger"
+              style={{ 
+                padding: '0.45rem 1rem',
+                borderRadius: '999px',
+                border: '1px solid #ff4d4f66',
+                background: '#ff4d4f18',
+                color: '#ff6b6b',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                cursor: 'pointer',
+                transition: 'background 0.15s, border-color 0.15s',
+                minHeight: '36px'
+              }}
+              disabled={revertingTransactions}
+              onClick={() => void handleRevertTransactions()}
+            >
+              {revertingTransactions ? 'Reverting…' : '⚠️ Revert Transactions'}
             </button>
           )}
           {isSuperAdmin && matchStatus !== null && (
