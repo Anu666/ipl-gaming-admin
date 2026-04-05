@@ -182,6 +182,19 @@ const bettingStats = {
 const betSettlement = {
   settle: (matchId: string) =>
     request<{ message: string }>(`/api/betsettlement/SettleBets/${matchId}`, { method: 'POST' }),
+  revertTransactions: (matchId: string) =>
+    request<{ 
+      message: string
+      completedReverted: number
+      totalDeleted: number
+      failedDeletes: number
+      questionsCleared: number
+      failedQuestions: number
+      skippedUsers: number
+      totalCreditsReverted: number
+      warnings: string[]
+      hasWarnings: boolean
+    }>(`/api/betsettlement/RevertMatchTransactions/${matchId}`, { method: 'POST' }),
 }
 
 // ── Leaderboard ──────────────────────────────────────────────────────────────
