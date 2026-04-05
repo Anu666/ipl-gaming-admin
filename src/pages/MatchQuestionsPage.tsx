@@ -27,8 +27,7 @@ interface QuestionTemplate {
 
 interface EditDraft {
   questionText: string
-  opt1: string
-  opt2: string
+  options: { id: number; optionText: string }[]
   credits: number
   submitting: boolean
   error: string | null
@@ -68,8 +67,8 @@ function matchLabel(m: MatchItem): string {
   return `${m.firstBattingTeamCode} vs ${m.secondBattingTeamCode}  ·  ${date}`
 }
 
-function blankDraft(text = '', opt1 = '', opt2 = '', credits = 10): EditDraft {
-  return { questionText: text, opt1, opt2, credits, submitting: false, error: null }
+function blankDraft(text = '', options: { id: number; optionText: string }[] = [{ id: 1, optionText: '' }, { id: 2, optionText: '' }], credits = 10): EditDraft {
+  return { questionText: text, options, credits, submitting: false, error: null }
 }
 
 function applyTeams(str: string, match?: MatchItem): string {
@@ -111,6 +110,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
   const [markingTransactionsSettled, setMarkingTransactionsSettled] = useState(false)
   const [markingDone, setMarkingDone] = useState(false)
   const [archiving, setArchiving] = useState(false)
+  const [recalculatingLeaderboard, setRecalculatingLeaderboard] = useState(false)
   const [pickerAnswers, setPickerAnswers] = useState<UserAnswer[] | null>(null)
   const [pickerAllUsers, setPickerAllUsers] = useState<UserSummary[] | null>(null)
   const [showPickersModal, setShowPickersModal] = useState(false)
@@ -351,6 +351,21 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
     }
   }
 
+  // ── Recalculate Leaderboard ───────────────────────────────────────────────────
+  async function handleRecalculateLeaderboard() {
+    if (!confirm('Recalculate leaderboard for this match? This will update the leaderboard based on all matches completed before this one.')) return
+    setRecalculatingLeaderboard(true)
+    try {
+      const updated = await api.matchStatuses.recalculateLeaderboard(matchId)
+      setMatchStatus(updated)
+      alert('Leaderboard recalculated successfully!')
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to recalculate leaderboard')
+    } finally {
+      setRecalculatingLeaderboard(false)
+    }
+  }
+
   // ── Draft state helpers ─────────────────────────────────────────────────────
   const patchDraft = (key: string, patch: Partial<EditDraft>) =>
     setRows(prev => prev.map(r => {
@@ -366,8 +381,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
   const addFromTemplate = (t: QuestionTemplate) => {
     const draft = blankDraft(
       applyTeams(t.questionText, match),
-      applyTeams(t.options[0]?.optionText ?? '', match),
-      applyTeams(t.options[1]?.optionText ?? '', match),
+      t.options.map(o => ({ id: o.id, optionText: applyTeams(o.optionText, match) })),
       t.credits,
     )
     setRows(prev => [...prev, { kind: 'new', key: genKey(), draft }])
@@ -384,8 +398,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
         kind: 'editing', q: r.q,
         draft: blankDraft(
           r.q.questionText,
-          r.q.options[0]?.optionText ?? '',
-          r.q.options[1]?.optionText ?? '',
+          [...r.q.options],
           r.q.credits,
         ),
       } as EditingRow
@@ -396,20 +409,65 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
       r.kind === 'editing' && r.q.id === id ? ({ kind: 'saved', q: r.q } as SavedRow) : r,
     ))
 
+  // ── Option management ───────────────────────────────────────────────────────
+  const updateOption = (key: string, idx: number, text: string) =>
+    setRows(prev => prev.map(r => {
+      if (rowKey(r) !== key) return r
+      const draft = (r.kind === 'new' || r.kind === 'editing') ? r.draft : null
+      if (!draft) return r
+      const options = [...draft.options]
+      options[idx] = { ...options[idx], optionText: text }
+      if (r.kind === 'new')     return { ...r, draft: { ...draft, options } } as NewRow
+      if (r.kind === 'editing') return { ...r, draft: { ...draft, options } } as EditingRow
+      return r
+    }))
+
+  const addOption = (key: string) =>
+    setRows(prev => prev.map(r => {
+      if (rowKey(r) !== key) return r
+      const draft = (r.kind === 'new' || r.kind === 'editing') ? r.draft : null
+      if (!draft || draft.options.length >= 10) return r
+      const newId = Math.max(...draft.options.map(o => o.id), 0) + 1
+      const options = [...draft.options, { id: newId, optionText: '' }]
+      if (r.kind === 'new')     return { ...r, draft: { ...draft, options } } as NewRow
+      if (r.kind === 'editing') return { ...r, draft: { ...draft, options } } as EditingRow
+      return r
+    }))
+
+  const removeOption = (key: string, idx: number) =>
+    setRows(prev => prev.map(r => {
+      if (rowKey(r) !== key) return r
+      const draft = (r.kind === 'new' || r.kind === 'editing') ? r.draft : null
+      if (!draft || draft.options.length <= 2) return r
+      const options = draft.options.filter((_, i) => i !== idx).map((o, i) => ({ ...o, id: i + 1 }))
+      if (r.kind === 'new')     return { ...r, draft: { ...draft, options } } as NewRow
+      if (r.kind === 'editing') return { ...r, draft: { ...draft, options } } as EditingRow
+      return r
+    }))
+
   // ── API actions ─────────────────────────────────────────────────────────────
   const saveNew = async (key: string) => {
     const rowIdx = rows.findIndex(r => r.kind === 'new' && r.key === key)
     const row = rows[rowIdx]
     if (!row || row.kind !== 'new') return
+
+    // Frontend validation
+    const texts = row.draft.options.map(o => o.optionText.trim().toLowerCase())
+    if (new Set(texts).size !== texts.length) {
+      patchDraft(key, { error: 'Duplicate option texts not allowed' })
+      return
+    }
+    if (row.draft.credits <= 0) {
+      patchDraft(key, { error: 'Credits must be greater than 0' })
+      return
+    }
+
     patchDraft(key, { submitting: true, error: null })
     try {
       const created = await api.questions.create({
         matchId,
         questionText: row.draft.questionText,
-        options: [
-          { id: 1, optionText: row.draft.opt1 },
-          { id: 2, optionText: row.draft.opt2 },
-        ],
+        options: row.draft.options,
         credits: row.draft.credits,
         sequence: rowIdx + 1,
         correctOptionId: null,
@@ -425,15 +483,24 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
   const updateEditing = async (id: string) => {
     const row = rows.find((r): r is EditingRow => r.kind === 'editing' && r.q.id === id)
     if (!row) return
+
+    // Frontend validation
+    const texts = row.draft.options.map(o => o.optionText.trim().toLowerCase())
+    if (new Set(texts).size !== texts.length) {
+      patchDraft(id, { error: 'Duplicate option texts not allowed' })
+      return
+    }
+    if (row.draft.credits <= 0) {
+      patchDraft(id, { error: 'Credits must be greater than 0' })
+      return
+    }
+
     patchDraft(id, { submitting: true, error: null })
     try {
       const updated = await api.questions.update({
         ...row.q,
         questionText: row.draft.questionText,
-        options: [
-          { id: row.q.options[0]?.id ?? 1, optionText: row.draft.opt1 },
-          { id: row.q.options[1]?.id ?? 2, optionText: row.draft.opt2 },
-        ],
+        options: row.draft.options,
         credits: row.draft.credits,
       })
       setRows(prev => prev.map(r =>
@@ -482,7 +549,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
   const allTxnsCompleted = isBetsSettled && transactions.length > 0 && !hasPendingTxns
   const isTransactionsSettled = picksStatus === MatchStatusValue.TransactionsSettled
   const isDone = picksStatus === MatchStatusValue.Done
-  // const isArchived = picksStatus === MatchStatusValue.Archived
+  const isArchived = picksStatus === MatchStatusValue.Archived
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
@@ -497,7 +564,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
             </p>
           )}
         </div>
-        <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
           {canSetReady && savedCount > 0 && (
             <button
               type="button"
@@ -581,6 +648,16 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
               onClick={() => void handleArchive()}
             >
               {archiving ? 'Archiving…' : '🗄️ Archive Match'}
+            </button>
+          )}
+          {(isDone || isArchived) && (
+            <button
+              type="button"
+              className="settle-bets-btn"
+              disabled={recalculatingLeaderboard}
+              onClick={() => void handleRecalculateLeaderboard()}
+            >
+              {recalculatingLeaderboard ? 'Recalculating…' : '🔄 Recalculate Leaderboard'}
             </button>
           )}
           {isSuperAdmin && matchStatus !== null && (
@@ -698,7 +775,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
               >
                 🔄 Refresh
               </button>
-              {isSuperAdmin && hasPendingTxns && (
+              {hasPendingTxns && (
                 <button
                   type="button"
                   className="settle-bets-btn"
@@ -729,7 +806,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
                     <th>Net Credits</th>
                     <th>Breakdown</th>
                     <th>Status</th>
-                    {isSuperAdmin && <th></th>}
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -756,21 +833,19 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
                             {isCompleted ? '✅ Completed' : '⏳ Pending'}
                           </span>
                         </td>
-                        {isSuperAdmin && (
-                          <td>
-                            {!isCompleted && (
-                              <button
-                                type="button"
-                                className="btn-primary"
-                                style={{ fontSize: '0.78rem', padding: '0.28rem 0.65rem' }}
-                                disabled={completingTxn === t.id || completingAll}
-                                onClick={() => void handleCompleteTransaction(t.id)}
-                              >
-                                {completingTxn === t.id ? '…' : 'Complete'}
-                              </button>
-                            )}
-                          </td>
-                        )}
+                        <td>
+                          {!isCompleted && (
+                            <button
+                              type="button"
+                              className="btn-primary"
+                              style={{ fontSize: '0.78rem', padding: '0.28rem 0.65rem' }}
+                              disabled={completingTxn === t.id || completingAll}
+                              onClick={() => void handleCompleteTransaction(t.id)}
+                            >
+                              {completingTxn === t.id ? '…' : 'Complete'}
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     )
                   })}
@@ -960,28 +1035,43 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
                     />
                   </div>
 
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="form-label">Option 1</label>
-                      <input
-                        className="form-control"
-                        type="text"
-                        placeholder="Option 1"
-                        value={draft.opt1}
-                        disabled={draft.submitting}
-                        onChange={e => patchDraft(key, { opt1: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Option 2</label>
-                      <input
-                        className="form-control"
-                        type="text"
-                        placeholder="Option 2"
-                        value={draft.opt2}
-                        disabled={draft.submitting}
-                        onChange={e => patchDraft(key, { opt2: e.target.value })}
-                      />
+                  <div className="form-group">
+                    <label className="form-label">Options (min 2, max 10)</label>
+                    <div className="mq-options-editor">
+                      {draft.options.map((opt, idx) => (
+                        <div key={opt.id} className="mq-option-row">
+                          <span className="mq-option-num">{opt.id}</span>
+                          <input
+                            className="form-control"
+                            type="text"
+                            placeholder={`Option ${opt.id}`}
+                            value={opt.optionText}
+                            disabled={draft.submitting}
+                            onChange={e => updateOption(key, idx, e.target.value)}
+                          />
+                          {draft.options.length > 2 && (
+                            <button
+                              type="button"
+                              className="btn-icon danger"
+                              onClick={() => removeOption(key, idx)}
+                              title="Remove option"
+                              disabled={draft.submitting}
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      {draft.options.length < 10 && (
+                        <button
+                          type="button"
+                          className="btn-secondary btn-sm"
+                          onClick={() => addOption(key)}
+                          disabled={draft.submitting}
+                        >
+                          + Add Option
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -1020,7 +1110,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
                       <button
                         type="button"
                         className="btn-primary"
-                        disabled={draft.submitting || !draft.questionText.trim() || !draft.opt1.trim() || !draft.opt2.trim()}
+                        disabled={draft.submitting || !draft.questionText.trim() || draft.options.length < 2 || draft.options.some(o => !o.optionText.trim())}
                         onClick={() => void saveNew(key)}
                       >
                         {draft.submitting ? 'Saving…' : 'Save'}
@@ -1049,7 +1139,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
                         <button
                           type="button"
                           className="btn-primary"
-                          disabled={draft.submitting || !draft.questionText.trim() || !draft.opt1.trim() || !draft.opt2.trim()}
+                          disabled={draft.submitting || !draft.questionText.trim() || draft.options.length < 2 || draft.options.some(o => !o.optionText.trim())}
                           onClick={() => void updateEditing(key)}
                         >
                           {draft.submitting ? 'Saving…' : 'Update'}

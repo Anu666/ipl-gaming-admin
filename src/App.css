@@ -519,6 +519,7 @@
   align-items: flex-start;
   gap: 1rem;
   margin-bottom: 1.25rem;
+  flex-wrap: wrap;
 }
 
 /* ── Buttons ── */
@@ -1393,6 +1394,39 @@
   background: #ffffff04;
 }
 
+/* Options editor */
+.mq-options-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mq-option-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mq-option-row .form-control {
+  flex: 1;
+}
+
+.mq-option-row .btn-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  min-height: 32px;
+}
+
 /* Template picker rows */
 .mq-template-row {
   display: flex;
@@ -1859,6 +1893,38 @@
 
 .mq-option-bar-fill--2 {
   background: linear-gradient(90deg, var(--sun), var(--flame));
+}
+
+.mq-option-bar-fill--3 {
+  background: linear-gradient(90deg, #a855f7, #ec4899);
+}
+
+.mq-option-bar-fill--4 {
+  background: linear-gradient(90deg, #10b981, #06b6d4);
+}
+
+.mq-option-bar-fill--5 {
+  background: linear-gradient(90deg, #f43f5e, #fb923c);
+}
+
+.mq-option-bar-fill--6 {
+  background: linear-gradient(90deg, #f97316, #fb923c);
+}
+
+.mq-option-bar-fill--7 {
+  background: linear-gradient(90deg, #06b6d4, #3b82f6);
+}
+
+.mq-option-bar-fill--8 {
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+}
+
+.mq-option-bar-fill--9 {
+  background: linear-gradient(90deg, #84cc16, #22c55e);
+}
+
+.mq-option-bar-fill--10 {
+  background: linear-gradient(90deg, #eab308, #f59e0b);
 }
 
 /* Voter chips */

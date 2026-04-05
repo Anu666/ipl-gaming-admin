@@ -248,5 +248,124 @@
       { "id": 2, "optionText": "No" }
     ],
     "credits": 15
+  },
+  {
+    "id": 26,
+    "category": "Match Outcome",
+    "questionText": "What will be the match result?",
+    "options": [
+      { "id": 1, "optionText": "Team 1 wins" },
+      { "id": 2, "optionText": "Team 2 wins" },
+      { "id": 3, "optionText": "Tie/Super Over" }
+    ],
+    "credits": 25
+  },
+  {
+    "id": 27,
+    "category": "Match Outcome",
+    "questionText": "What will be the winning margin?",
+    "options": [
+      { "id": 1, "optionText": "Less than 10 runs/1 wicket" },
+      { "id": 2, "optionText": "10-25 runs/2-3 wickets" },
+      { "id": 3, "optionText": "25-50 runs/4-6 wickets" },
+      { "id": 4, "optionText": "More than 50 runs/7+ wickets" }
+    ],
+    "credits": 20
+  },
+  {
+    "id": 28,
+    "category": "Batting",
+    "questionText": "What will be Team 1's total score?",
+    "options": [
+      { "id": 1, "optionText": "Less than 150" },
+      { "id": 2, "optionText": "150-180" },
+      { "id": 3, "optionText": "181-200" },
+      { "id": 4, "optionText": "More than 200" }
+    ],
+    "credits": 20
+  },
+  {
+    "id": 29,
+    "category": "Batting",
+    "questionText": "What will be Team 2's total score?",
+    "options": [
+      { "id": 1, "optionText": "Less than 150" },
+      { "id": 2, "optionText": "150-180" },
+      { "id": 3, "optionText": "181-200" },
+      { "id": 4, "optionText": "More than 200" }
+    ],
+    "credits": 20
+  },
+  {
+    "id": 30,
+    "category": "Batting",
+    "questionText": "Highest individual score in the match?",
+    "options": [
+      { "id": 1, "optionText": "Less than 50" },
+      { "id": 2, "optionText": "50-75" },
+      { "id": 3, "optionText": "76-99" },
+      { "id": 4, "optionText": "100 or more" }
+    ],
+    "credits": 20
+  },
+  {
+    "id": 31,
+    "category": "Bowling",
+    "questionText": "Most wickets in the match?",
+    "options": [
+      { "id": 1, "optionText": "Team 1 pace bowler" },
+      { "id": 2, "optionText": "Team 1 spin bowler" },
+      { "id": 3, "optionText": "Team 2 pace bowler" },
+      { "id": 4, "optionText": "Team 2 spin bowler" }
+    ],
+    "credits": 25
+  },
+  {
+    "id": 32,
+    "category": "Powerplay",
+    "questionText": "Team 1 powerplay score range?",
+    "options": [
+      { "id": 1, "optionText": "Less than 40" },
+      { "id": 2, "optionText": "40-55" },
+      { "id": 3, "optionText": "56-70" },
+      { "id": 4, "optionText": "More than 70" }
+    ],
+    "credits": 20
+  },
+  {
+    "id": 33,
+    "category": "Powerplay",
+    "questionText": "Team 2 powerplay score range?",
+    "options": [
+      { "id": 1, "optionText": "Less than 40" },
+      { "id": 2, "optionText": "40-55" },
+      { "id": 3, "optionText": "56-70" },
+      { "id": 4, "optionText": "More than 70" }
+    ],
+    "credits": 20
+  },
+  {
+    "id": 34,
+    "category": "Sixes & Fours",
+    "questionText": "Total sixes in the match?",
+    "options": [
+      { "id": 1, "optionText": "0-8 sixes" },
+      { "id": 2, "optionText": "9-15 sixes" },
+      { "id": 3, "optionText": "16-22 sixes" },
+      { "id": 4, "optionText": "23+ sixes" }
+    ],
+    "credits": 20
+  },
+  {
+    "id": 35,
+    "category": "Death Overs",
+    "questionText": "Runs scored in last 4 overs (Team 1)?",
+    "options": [
+      { "id": 1, "optionText": "Less than 35" },
+      { "id": 2, "optionText": "35-50" },
+      { "id": 3, "optionText": "51-65" },
+      { "id": 4, "optionText": "More than 65" }
+    ],
+    "credits": 20
   }
 ]
