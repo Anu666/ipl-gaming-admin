@@ -115,7 +115,8 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
   const [pickerAnswers, setPickerAnswers] = useState<UserAnswer[] | null>(null)
   const [pickerAllUsers, setPickerAllUsers] = useState<UserSummary[] | null>(null)
   const [showPickersModal, setShowPickersModal] = useState(false)
-  const [editStartTime, setEditStartTime] = useState<string>('')
+  const [editStartDate, setEditStartDate] = useState<string>('')
+  const [editStartTimeOfDay, setEditStartTimeOfDay] = useState<string>('')
   const [savingStartTime, setSavingStartTime] = useState(false)
   const [togglingDelayed, setTogglingDelayed] = useState(false)
 
@@ -151,7 +152,14 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
   // ── Sync editStartTime default to effective match commence date ────────────
   useEffect(() => {
     const raw = matchStatus?.matchCommenceStartDate ?? match?.matchCommenceStartDate ?? ''
-    setEditStartTime(raw ? raw.substring(0, 16) : '')
+    if (raw) {
+      const dt = raw.substring(0, 16) // "YYYY-MM-DDTHH:MM"
+      setEditStartDate(dt.substring(0, 10))   // "YYYY-MM-DD"
+      setEditStartTimeOfDay(dt.substring(11)) // "HH:MM"
+    } else {
+      setEditStartDate('')
+      setEditStartTimeOfDay('')
+    }
   }, [matchStatus?.matchCommenceStartDate, match?.matchCommenceStartDate])
 
   // ── Load picker data when status is ReadyForPicks ─────────────────────────
@@ -420,10 +428,11 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
 
   // ── Update Match Start Time ────────────────────────────────────────────────
   async function handleSaveStartTime() {
-    if (!editStartTime || !matchId) return
+    if (!editStartDate || !editStartTimeOfDay || !matchId) return
+    const combined = `${editStartDate}T${editStartTimeOfDay}`
     setSavingStartTime(true)
     try {
-      const updated = await api.matchStatuses.updateStartTime(matchId, editStartTime)
+      const updated = await api.matchStatuses.updateStartTime(matchId, combined)
       setMatchStatus(updated)
       alert('Match start time updated successfully.')
     } catch (e) {
@@ -860,18 +869,25 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
                   </span>
               }
             </p>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <input
-                type="datetime-local"
+                type="date"
                 className="form-control"
                 style={{ width: 'auto' }}
-                value={editStartTime}
-                onChange={e => setEditStartTime(e.target.value)}
+                value={editStartDate}
+                onChange={e => setEditStartDate(e.target.value)}
+              />
+              <input
+                type="time"
+                className="form-control"
+                style={{ width: 'auto' }}
+                value={editStartTimeOfDay}
+                onChange={e => setEditStartTimeOfDay(e.target.value)}
               />
               <button
                 type="button"
                 className="btn-primary"
-                disabled={savingStartTime || !editStartTime}
+                disabled={savingStartTime || !editStartDate || !editStartTimeOfDay}
                 onClick={() => void handleSaveStartTime()}
               >
                 {savingStartTime ? 'Saving…' : 'Save'}
