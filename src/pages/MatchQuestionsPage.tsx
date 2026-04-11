@@ -117,6 +117,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
   const [showPickersModal, setShowPickersModal] = useState(false)
   const [editStartTime, setEditStartTime] = useState<string>('')
   const [savingStartTime, setSavingStartTime] = useState(false)
+  const [togglingDelayed, setTogglingDelayed] = useState(false)
 
   const match = allMatches.find(m => m.id === matchId)
 
@@ -432,6 +433,22 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
     }
   }
 
+  // ── Toggle Delayed ─────────────────────────────────────────────────────────
+  async function handleToggleDelayed() {
+    if (!matchId || !matchStatus) return
+    setTogglingDelayed(true)
+    try {
+      const updated = matchStatus.isDelayed
+        ? await api.matchStatuses.unmarkDelayed(matchId)
+        : await api.matchStatuses.markDelayed(matchId)
+      setMatchStatus(updated)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to toggle delayed status')
+    } finally {
+      setTogglingDelayed(false)
+    }
+  }
+
   // ── Draft state helpers ─────────────────────────────────────────────────────
   const patchDraft = (key: string, patch: Partial<EditDraft>) =>
     setRows(prev => prev.map(r => {
@@ -602,6 +619,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
     : allTemplates.filter(t => t.category === pickerCat)
 
   const picksStatus = matchStatus?.status ?? MatchStatusValue.NotStarted
+  const isDelayed = matchStatus?.isDelayed ?? false
   const isLocked = picksStatus !== MatchStatusValue.NotStarted
   const canSetReady = picksStatus === MatchStatusValue.NotStarted
   const canCalculateBets = picksStatus === MatchStatusValue.PicksClosed || picksStatus === MatchStatusValue.BetsUpdated
@@ -642,8 +660,19 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
           )}
           {!canSetReady && (
             <span className={`picks-status-badge picks-status--${picksStatus}`}>
-              {MATCH_STATUS_LABELS[picksStatus]}
+              {MATCH_STATUS_LABELS[picksStatus]}{isDelayed ? ' · Delayed' : ''}
             </span>
+          )}
+          {picksStatus === MatchStatusValue.ReadyForPicks && matchStatus !== null && (
+            <button
+              type="button"
+              className={isDelayed ? 'calculate-bets-btn' : 'ready-for-picks-btn'}
+              style={{ background: isDelayed ? undefined : '#f59e0b22', borderColor: '#f59e0b66', color: '#f59e0b' }}
+              disabled={togglingDelayed}
+              onClick={() => void handleToggleDelayed()}
+            >
+              {togglingDelayed ? '…' : isDelayed ? '▶ Unmark Delayed' : '⏸ Mark as Delayed'}
+            </button>
           )}
           {picksStatus === MatchStatusValue.ReadyForPicks && pickerAnswers !== null && pickerAllUsers !== null && (
             <button
