@@ -115,6 +115,8 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
   const [pickerAnswers, setPickerAnswers] = useState<UserAnswer[] | null>(null)
   const [pickerAllUsers, setPickerAllUsers] = useState<UserSummary[] | null>(null)
   const [showPickersModal, setShowPickersModal] = useState(false)
+  const [editStartTime, setEditStartTime] = useState<string>('')
+  const [savingStartTime, setSavingStartTime] = useState(false)
 
   const match = allMatches.find(m => m.id === matchId)
 
@@ -144,6 +146,12 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
       .then(s => setMatchStatus(s))
       .catch(() => setMatchStatus(null))
   }, [matchId])
+
+  // ── Sync editStartTime default to effective match commence date ────────────
+  useEffect(() => {
+    const raw = matchStatus?.matchCommenceStartDate ?? match?.matchCommenceStartDate ?? ''
+    setEditStartTime(raw ? raw.substring(0, 16) : '')
+  }, [matchStatus?.matchCommenceStartDate, match?.matchCommenceStartDate])
 
   // ── Load picker data when status is ReadyForPicks ─────────────────────────
   useEffect(() => {
@@ -406,6 +414,21 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
       alert(`❌ ERROR: ${errorMsg}\n\n⚠️ Database may be in inconsistent state. Check server logs and verify data integrity!`)
     } finally {
       setRevertingTransactions(false)
+    }
+  }
+
+  // ── Update Match Start Time ────────────────────────────────────────────────
+  async function handleSaveStartTime() {
+    if (!editStartTime || !matchId) return
+    setSavingStartTime(true)
+    try {
+      const updated = await api.matchStatuses.updateStartTime(matchId, editStartTime)
+      setMatchStatus(updated)
+      alert('Match start time updated successfully.')
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to update start time')
+    } finally {
+      setSavingStartTime(false)
     }
   }
 
@@ -775,6 +798,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
         </div>
 
         {match && (
+          <>
           <div className="mq-match-info">
             <div className="mq-match-teams">
               <span className="mq-team">{match.firstBattingTeamName}</span>
@@ -793,6 +817,39 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
               )}
             </div>
           </div>
+
+          {/* Edit Match Start Time */}
+          <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+            <p className="form-label" style={{ marginBottom: '0.4rem' }}>
+              Match Start Time (IST)
+              {matchStatus?.matchCommenceStartDate
+                ? <span className="subtle" style={{ marginLeft: '0.5rem', fontWeight: 400 }}>
+                    Current: {new Date(matchStatus.matchCommenceStartDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true })}
+                  </span>
+                : <span className="subtle" style={{ marginLeft: '0.5rem', fontWeight: 400 }}>
+                    Current: {new Date(match.matchCommenceStartDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true })} (from schedule)
+                  </span>
+              }
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <input
+                type="datetime-local"
+                className="form-control"
+                style={{ width: 'auto' }}
+                value={editStartTime}
+                onChange={e => setEditStartTime(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={savingStartTime || !editStartTime}
+                onClick={() => void handleSaveStartTime()}
+              >
+                {savingStartTime ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+          </>
         )}
       </div>
 

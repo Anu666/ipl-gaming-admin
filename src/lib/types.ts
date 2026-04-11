@@ -245,6 +245,7 @@ export interface MatchStatusRecord {
   id: string
   matchId: string
   status: MatchStatusValue
+  matchCommenceStartDate?: string | null
   matchSummary?: MatchSummaryEntry[] | null
 }
 

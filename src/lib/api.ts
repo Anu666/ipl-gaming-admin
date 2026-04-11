@@ -170,6 +170,8 @@ const matchStatuses = {
     request<MatchStatusRecord>(`/api/matchstatus/RecalculateLeaderboard/${matchId}`, { method: 'POST' }),
   overrideStatus: (matchId: string, status: number) =>
     request<MatchStatusRecord>(`/api/matchstatus/OverrideMatchStatus/${matchId}`, { method: 'PUT', body: JSON.stringify({ status }) }),
+  updateStartTime: (matchId: string, matchCommenceStartDate: string) =>
+    request<MatchStatusRecord>(`/api/matchstatus/UpdateMatchStartTime/${matchId}`, { method: 'PATCH', body: JSON.stringify({ matchCommenceStartDate }) }),
 }
 
 // ── Betting Stats ─────────────────────────────────────────────────────────────

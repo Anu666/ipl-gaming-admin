@@ -46,6 +46,15 @@ function formatTime(timeStr: string): string {
   return `${hour}:${m.toString().padStart(2, '0')} ${ampm} IST`
 }
 
+function formatTimeFromISO(isoStr: string): string {
+  const d = new Date(isoStr)
+  const h = d.getHours()
+  const m = d.getMinutes()
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const hour = h % 12 || 12
+  return `${hour}:${m.toString().padStart(2, '0')} ${ampm} IST`
+}
+
 const TEAM_COLORS: Record<string, string> = {
   CSK:  '#f7d000',
   MI:   '#4da6ff',
@@ -170,6 +179,7 @@ export function MatchesPage({ onNavigateToMatchQuestions }: { onNavigateToMatchQ
             const schedStatus = getScheduleStatus(match)
             const picksRecord = statusMap[match.id]
             const picksStatus = picksRecord?.status ?? MatchStatusValue.NotStarted
+            const effectiveStartDate = picksRecord?.matchCommenceStartDate ?? match.matchCommenceStartDate
             const team1Color = TEAM_COLORS[match.firstBattingTeamCode] ?? 'var(--sun)'
             const team2Color = TEAM_COLORS[match.secondBattingTeamCode] ?? 'var(--teal)'
             return (
@@ -209,9 +219,9 @@ export function MatchesPage({ onNavigateToMatchQuestions }: { onNavigateToMatchQ
 
                 {/* Meta info */}
                 <div className="match-meta">
-                  <span className="match-meta-item">{formatDate(match.matchDate)}</span>
+                  <span className="match-meta-item">{formatDate(effectiveStartDate)}</span>
                   <span className="match-meta-item">
-                    {formatTime(match.matchTime)}
+                    {formatTimeFromISO(effectiveStartDate)}
                     <span className="subtle" style={{ marginLeft: '0.4rem' }}>
                       ({match.gmtMatchTime})
                     </span>
