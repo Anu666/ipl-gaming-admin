@@ -208,5 +208,31 @@ const leaderboard = {
   get: () => request<LeaderboardEntry[]>('/api/leaderboard/GetLeaderboard'),
 }
 
+// ── Question Generator ────────────────────────────────────────────────────────
+export interface GeneratedQuestion {
+  id: number
+  questionText: string
+  options: { id: number; optionText: string }[]
+  credits: number
+}
+
+const QUESTION_GENERATOR_URL = (import.meta.env.VITE_QUESTION_GENERATOR_URL as string | undefined) ?? 'https://ipl-questions-generator-bbckeda5dudvecga.canadacentral-01.azurewebsites.net'
+
+const questionGenerator = {
+  generate: async (team1: string, team2: string, date: string): Promise<GeneratedQuestion[]> => {
+    const response = await fetch(`${QUESTION_GENERATOR_URL}/api/v1/questions/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ team1, team2, date }),
+    })
+    if (!response.ok) {
+      const text = await response.text().catch(() => response.statusText)
+      throw new Error(`[${response.status}] ${text}`)
+    }
+    const data = await response.json() as { questions: GeneratedQuestion[] }
+    return data.questions
+  },
+}
+
 // ── Exported API object ───────────────────────────────────────────────────────
-export const api = { users, matches, questions, userAnswers, transactions, matchStatuses, bettingStats, betSettlement, leaderboard }
+export const api = { users, matches, questions, userAnswers, transactions, matchStatuses, bettingStats, betSettlement, leaderboard, questionGenerator }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import matchesJson from '../assets/json/matches.json'
 import templatesJson from '../assets/json/question-templates.json'
 import { api } from '../lib/api'
+import type { GeneratedQuestion } from '../lib/api'
 import { MatchStatusValue, MATCH_STATUS_LABELS, OUTCOME_LABELS, TransactionStatus, type MatchStatusRecord, type TransactionWithUser, type UserAnswer, type UserSummary } from '../lib/types'
 import type { Question } from '../lib/types'
 
@@ -119,6 +120,11 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
   const [editStartTimeOfDay, setEditStartTimeOfDay] = useState<string>('')
   const [savingStartTime, setSavingStartTime] = useState(false)
   const [togglingDelayed, setTogglingDelayed] = useState(false)
+  const [generatingAI, setGeneratingAI] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
+  const [showAIModal, setShowAIModal] = useState(false)
+  const [aiQuestions, setAiQuestions] = useState<GeneratedQuestion[]>([])
+  const [aiSelected, setAiSelected] = useState<Set<number>>(new Set())
 
   const match = allMatches.find(m => m.id === matchId)
 
@@ -440,6 +446,40 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
     } finally {
       setSavingStartTime(false)
     }
+  }
+
+  // ── AI Generate Questions ────────────────────────────────────────────────────
+  async function handleGenerateAI() {
+    if (!match) return
+    setShowAIModal(true)
+    setGeneratingAI(true)
+    setAiError(null)
+    setAiQuestions([])
+    setAiSelected(new Set())
+    try {
+      const qs = await api.questionGenerator.generate(
+        match.firstBattingTeamName,
+        match.secondBattingTeamName,
+        match.matchDate.substring(0, 10),
+      )
+      setAiQuestions(qs)
+      setAiSelected(new Set(qs.map(q => q.id)))
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : 'Failed to generate questions')
+    } finally {
+      setGeneratingAI(false)
+    }
+  }
+
+  function addFromAI() {
+    const selected = aiQuestions.filter(q => aiSelected.has(q.id))
+    const newRows: NewRow[] = selected.map(q => ({
+      kind: 'new',
+      key: genKey(),
+      draft: blankDraft(q.questionText, q.options, q.credits),
+    }))
+    setRows(prev => [...prev, ...newRows])
+    setShowAIModal(false)
   }
 
   // ── Toggle Delayed ─────────────────────────────────────────────────────────
@@ -808,6 +848,14 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
           )}
           {!isLocked && (
             <>
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={generatingAI || !match}
+                onClick={() => void handleGenerateAI()}
+              >
+                🤖 AI Generate
+              </button>
               <button type="button" className="btn-secondary" onClick={() => setShowPicker(true)}>
                 📋 From Template
               </button>
@@ -1030,6 +1078,14 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
           <p className="subtle" style={{ marginBottom: '1rem' }}>No questions yet for this match.</p>
           {!isLocked && (
             <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={generatingAI || !match}
+                onClick={() => void handleGenerateAI()}
+              >
+                🤖 AI Generate
+              </button>
               <button type="button" className="btn-secondary" onClick={() => setShowPicker(true)}>
                 📋 Pick from Templates
               </button>
@@ -1319,6 +1375,133 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* AI Question Generator modal */}
+      {showAIModal && (
+        <div
+          className="modal-overlay"
+          onClick={e => { if (e.target === e.currentTarget && !generatingAI) setShowAIModal(false) }}
+        >
+          <div className="modal modal-wide">
+            <div className="modal-header">
+              <h3 className="modal-title">🤖 AI Generated Questions</h3>
+              <button
+                className="modal-close-btn"
+                type="button"
+                disabled={generatingAI}
+                onClick={() => setShowAIModal(false)}
+              >✕</button>
+            </div>
+
+            <div className="modal-body" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
+              {/* Loading state */}
+              {generatingAI && (
+                <div style={{ textAlign: 'center', padding: '2.5rem 1rem' }}>
+                  <p className="subtle" style={{ fontSize: '0.95rem', marginBottom: '0.5rem' }}>⏳ Generating questions…</p>
+                  <p className="subtle" style={{ fontSize: '0.82rem' }}>
+                    Using AI to create questions for {match?.firstBattingTeamName} vs {match?.secondBattingTeamName}.
+                    This may take a few seconds.
+                  </p>
+                </div>
+              )}
+
+              {/* Error state */}
+              {!generatingAI && aiError !== null && (
+                <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+                  <p style={{ color: 'var(--rose)', marginBottom: '1rem' }}>{aiError}</p>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => void handleGenerateAI()}
+                  >
+                    🔄 Try Again
+                  </button>
+                </div>
+              )}
+
+              {/* Results state */}
+              {!generatingAI && aiError === null && aiQuestions.length > 0 && (
+                <>
+                  {/* Select all toggle */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                    <span className="subtle" style={{ fontSize: '0.85rem' }}>
+                      {aiSelected.size} of {aiQuestions.length} selected
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ fontSize: '0.78rem', padding: '0.25rem 0.65rem', minHeight: '28px' }}
+                      onClick={() => {
+                        if (aiSelected.size === aiQuestions.length) {
+                          setAiSelected(new Set())
+                        } else {
+                          setAiSelected(new Set(aiQuestions.map(q => q.id)))
+                        }
+                      }}
+                    >
+                      {aiSelected.size === aiQuestions.length ? 'Deselect All' : 'Select All'}
+                    </button>
+                  </div>
+
+                  {/* Question list */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    {aiQuestions.map(q => (
+                      <label
+                        key={q.id}
+                        className="mq-template-row"
+                        style={{ cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '0.65rem' }}
+                      >
+                        <input
+                          type="checkbox"
+                          style={{ marginTop: '0.2rem', flexShrink: 0, accentColor: 'var(--accent)' }}
+                          checked={aiSelected.has(q.id)}
+                          onChange={e => {
+                            setAiSelected(prev => {
+                              const next = new Set(prev)
+                              if (e.target.checked) next.add(q.id)
+                              else next.delete(q.id)
+                              return next
+                            })
+                          }}
+                        />
+                        <div className="mq-template-body" style={{ flex: 1 }}>
+                          <span className="mq-template-q">{q.questionText}</span>
+                          <span className="mq-template-opts">
+                            {q.options.map((o: { id: number; optionText: string }) => o.optionText).join('  ·  ')}
+                          </span>
+                        </div>
+                        <span className="qt-credits" style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                          {q.credits.toFixed(2)} cr
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {!generatingAI && aiError === null && aiQuestions.length > 0 && (
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowAIModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={aiSelected.size === 0}
+                  onClick={addFromAI}
+                >
+                  + Add Selected ({aiSelected.size})
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
