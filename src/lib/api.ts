@@ -219,11 +219,11 @@ export interface GeneratedQuestion {
 const QUESTION_GENERATOR_URL = (import.meta.env.VITE_QUESTION_GENERATOR_URL as string | undefined) ?? 'https://ipl-questions-generator-bbckeda5dudvecga.canadacentral-01.azurewebsites.net'
 
 const questionGenerator = {
-  generate: async (team1: string, team2: string, date: string): Promise<GeneratedQuestion[]> => {
+  generate: async (team1: string, team2: string, date: string, direction?: string): Promise<GeneratedQuestion[]> => {
     const response = await fetch(`${QUESTION_GENERATOR_URL}/api/v1/questions/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ team1, team2, date }),
+      body: JSON.stringify({ team1, team2, date, ...(direction ? { direction } : {}) }),
     })
     if (!response.ok) {
       const text = await response.text().catch(() => response.statusText)

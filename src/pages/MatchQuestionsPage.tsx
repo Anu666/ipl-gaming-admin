@@ -125,6 +125,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
   const [showAIModal, setShowAIModal] = useState(false)
   const [aiQuestions, setAiQuestions] = useState<GeneratedQuestion[]>([])
   const [aiSelected, setAiSelected] = useState<Set<number>>(new Set())
+  const [aiPrompt, setAiPrompt] = useState('')
 
   const match = allMatches.find(m => m.id === matchId)
 
@@ -449,9 +450,15 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
   }
 
   // ── AI Generate Questions ────────────────────────────────────────────────────
+  function openAIModal() {
+    setAiError(null)
+    setAiQuestions([])
+    setAiSelected(new Set())
+    setShowAIModal(true)
+  }
+
   async function handleGenerateAI() {
     if (!match) return
-    setShowAIModal(true)
     setGeneratingAI(true)
     setAiError(null)
     setAiQuestions([])
@@ -461,9 +468,9 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
         match.firstBattingTeamName,
         match.secondBattingTeamName,
         match.matchDate.substring(0, 10),
+        aiPrompt.trim() || undefined,
       )
       setAiQuestions(qs)
-      setAiSelected(new Set(qs.map(q => q.id)))
     } catch (e) {
       setAiError(e instanceof Error ? e.message : 'Failed to generate questions')
     } finally {
@@ -851,8 +858,8 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
               <button
                 type="button"
                 className="btn-secondary"
-                disabled={generatingAI || !match}
-                onClick={() => void handleGenerateAI()}
+                disabled={!match}
+                onClick={openAIModal}
               >
                 🤖 AI Generate
               </button>
@@ -1081,8 +1088,8 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
               <button
                 type="button"
                 className="btn-secondary"
-                disabled={generatingAI || !match}
-                onClick={() => void handleGenerateAI()}
+                disabled={!match}
+                onClick={openAIModal}
               >
                 🤖 AI Generate
               </button>
@@ -1396,6 +1403,23 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
             </div>
 
             <div className="modal-body" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
+              {/* Input state */}
+              {!generatingAI && aiQuestions.length === 0 && aiError === null && (
+                <div>
+                  <p className="subtle" style={{ fontSize: '0.88rem', marginBottom: '0.6rem' }}>
+                    Optionally give some direction for the questions (e.g. "focus on powerplay and death overs"). Leave blank for general questions.
+                  </p>
+                  <textarea
+                    className="form-control"
+                    rows={3}
+                    placeholder="e.g. Focus on team totals and bowling performance. Avoid player-specific questions."
+                    value={aiPrompt}
+                    onChange={e => setAiPrompt(e.target.value)}
+                    style={{ resize: 'vertical', width: '100%' }}
+                  />
+                </div>
+              )}
+
               {/* Loading state */}
               {generatingAI && (
                 <div style={{ textAlign: 'center', padding: '2.5rem 1rem' }}>
@@ -1410,14 +1434,45 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
               {/* Error state */}
               {!generatingAI && aiError !== null && (
                 <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
-                  <p style={{ color: 'var(--rose)', marginBottom: '1rem' }}>{aiError}</p>
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => void handleGenerateAI()}
-                  >
-                    🔄 Try Again
-                  </button>
+                  <div style={{
+                    background: 'var(--surface-raised, #2a1a1a)',
+                    border: '1px solid var(--rose)',
+                    borderRadius: '8px',
+                    padding: '1rem 1.25rem',
+                    marginBottom: '1.25rem',
+                    textAlign: 'left',
+                  }}>
+                    <p style={{ color: 'var(--rose)', fontWeight: 600, marginBottom: '0.35rem', fontSize: '0.9rem' }}>
+                      ⚠️ Question generation failed
+                    </p>
+                    <p className="subtle" style={{ fontSize: '0.82rem', marginBottom: '0.5rem' }}>
+                      {/busy|rate.limit|overload|quota|unavailable|503|429/i.test(aiError)
+                        ? 'The AI service is temporarily busy. Please wait a moment and try again.'
+                        : /no valid questions/i.test(aiError)
+                        ? 'The AI returned no usable questions. Try adjusting your direction prompt and generating again.'
+                        : 'Something went wrong while generating questions. You can try again or edit your prompt.'}
+                    </p>
+                    <details style={{ fontSize: '0.78rem' }}>
+                      <summary className="subtle" style={{ cursor: 'pointer' }}>Technical details</summary>
+                      <p className="subtle" style={{ marginTop: '0.35rem', wordBreak: 'break-word' }}>{aiError}</p>
+                    </details>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center' }}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => setAiError(null)}
+                    >
+                      ← Edit Prompt
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={() => void handleGenerateAI()}
+                    >
+                      🔄 Try Again
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1481,6 +1536,26 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
                 </>
               )}
             </div>
+
+            {!generatingAI && aiQuestions.length === 0 && aiError === null && (
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowAIModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={!match}
+                  onClick={() => void handleGenerateAI()}
+                >
+                  🤖 Generate
+                </button>
+              </div>
+            )}
 
             {!generatingAI && aiError === null && aiQuestions.length > 0 && (
               <div className="modal-footer">
