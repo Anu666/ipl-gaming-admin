@@ -199,23 +199,29 @@ export function MatchesPage({ onNavigateToMatchQuestions }: { onNavigateToMatchQ
                 </div>
 
                 {/* Teams */}
-                <div className="match-vs-row">
-                  <div className="match-team">
-                    <span className="match-team-code" style={{ color: team1Color }}>
-                      {match.firstBattingTeamCode}
-                    </span>
-                    <span className="match-team-name">{match.firstBattingTeamName}</span>
-                  </div>
+                {match.firstBattingTeamCode ? (
+                  <div className="match-vs-row">
+                    <div className="match-team">
+                      <span className="match-team-code" style={{ color: team1Color }}>
+                        {match.firstBattingTeamCode}
+                      </span>
+                      <span className="match-team-name">{match.firstBattingTeamName}</span>
+                    </div>
 
-                  <span className="match-vs-text">vs</span>
+                    <span className="match-vs-text">vs</span>
 
-                  <div className="match-team match-team--right">
-                    <span className="match-team-code" style={{ color: team2Color }}>
-                      {match.secondBattingTeamCode}
-                    </span>
-                    <span className="match-team-name">{match.secondBattingTeamName}</span>
+                    <div className="match-team match-team--right">
+                      <span className="match-team-code" style={{ color: team2Color }}>
+                        {match.secondBattingTeamCode}
+                      </span>
+                      <span className="match-team-name">{match.secondBattingTeamName}</span>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="match-vs-row">
+                    <p className="match-tournament-label">{match.matchName}</p>
+                  </div>
+                )}
 
                 {/* Meta info */}
                 <div className="match-meta">

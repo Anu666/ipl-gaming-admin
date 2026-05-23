@@ -11,6 +11,7 @@ import type { Question } from '../lib/types'
 interface MatchItem {
   id: string
   matchDate: string
+  matchName: string
   firstBattingTeamName: string
   firstBattingTeamCode: string
   secondBattingTeamName: string
@@ -65,6 +66,7 @@ function getDefaultMatchId(): string {
 
 function matchLabel(m: MatchItem): string {
   const date = new Date(m.matchDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+  if (!m.firstBattingTeamCode) return `${m.matchName}  ·  ${date}`
   return `${m.firstBattingTeamCode} vs ${m.secondBattingTeamCode}  ·  ${date}`
 }
 
@@ -894,9 +896,15 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
           <>
           <div className="mq-match-info">
             <div className="mq-match-teams">
-              <span className="mq-team">{match.firstBattingTeamName}</span>
-              <span className="mq-vs">vs</span>
-              <span className="mq-team">{match.secondBattingTeamName}</span>
+              {match.firstBattingTeamName ? (
+                <>
+                  <span className="mq-team">{match.firstBattingTeamName}</span>
+                  <span className="mq-vs">vs</span>
+                  <span className="mq-team">{match.secondBattingTeamName}</span>
+                </>
+              ) : (
+                <span className="mq-team">{match.matchName}</span>
+              )}
             </div>
             <div className="mq-match-meta">
               <span className="mq-match-date">
@@ -1425,7 +1433,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
                 <div style={{ textAlign: 'center', padding: '2.5rem 1rem' }}>
                   <p className="subtle" style={{ fontSize: '0.95rem', marginBottom: '0.5rem' }}>⏳ Generating questions…</p>
                   <p className="subtle" style={{ fontSize: '0.82rem' }}>
-                    Using AI to create questions for {match?.firstBattingTeamName} vs {match?.secondBattingTeamName}.
+                    Using AI to create questions for {match?.firstBattingTeamName ? `${match.firstBattingTeamName} vs ${match.secondBattingTeamName}` : match?.matchName}.
                     This may take a few seconds.
                   </p>
                 </div>
@@ -1658,7 +1666,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
                 Players will be able to submit their picks for:
               </p>
               <p style={{ margin: '0 0 0.5rem', fontWeight: 600 }}>
-                {match?.firstBattingTeamCode} vs {match?.secondBattingTeamCode}
+                {match?.firstBattingTeamCode ? `${match.firstBattingTeamCode} vs ${match.secondBattingTeamCode}` : match?.matchName}
               </p>
               <div className="confirm-stats">
                 <div className="confirm-stat">
@@ -1716,7 +1724,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
                 This will set the match status to <strong>Match Completed</strong> for:
               </p>
               <p style={{ margin: '0 0 1rem', fontWeight: 600 }}>
-                {match?.firstBattingTeamCode} vs {match?.secondBattingTeamCode}
+                {match?.firstBattingTeamCode ? `${match.firstBattingTeamCode} vs ${match.secondBattingTeamCode}` : match?.matchName}
               </p>
               <p className="subtle" style={{ fontSize: '0.82rem', margin: 0 }}>
                 This action requires the current status to be <em>Bets Updated</em>. Ensure all results are finalised before proceeding.
@@ -1765,7 +1773,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
                 Change status from <strong>{MATCH_STATUS_LABELS[picksStatus]}</strong> → <strong>{MATCH_STATUS_LABELS[pendingOverrideStatus]}</strong>
               </p>
               <p style={{ margin: '0 0 0.75rem', fontWeight: 600 }}>
-                {match?.firstBattingTeamCode} vs {match?.secondBattingTeamCode}
+                {match?.firstBattingTeamCode ? `${match.firstBattingTeamCode} vs ${match.secondBattingTeamCode}` : match?.matchName}
               </p>
               <p className="subtle" style={{ fontSize: '0.82rem', margin: 0 }}>
                 This bypasses all validation. Use with caution.
@@ -1862,7 +1870,7 @@ export function MatchQuestionsPage({ isSuperAdmin = false, initialMatchId }: { i
             </div>
             <div className="modal-body">
               <p style={{ margin: '0 0 1rem' }}>
-                Confirm correct answers for <strong>{match?.firstBattingTeamCode} vs {match?.secondBattingTeamCode}</strong>:
+                Confirm correct answers for <strong>{match?.firstBattingTeamCode ? `${match.firstBattingTeamCode} vs ${match.secondBattingTeamCode}` : match?.matchName}</strong>:
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
                 {savedRows.map((r, idx) => {
