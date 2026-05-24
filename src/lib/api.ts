@@ -8,6 +8,7 @@ import type {
   TransactionWithUser,
   MatchStatusRecord,
   LeaderboardEntry,
+  AwardCategory,
   CreateUserRequest,
   UpdateUserRequest,
   UpdateCreditsRequest,
@@ -206,7 +207,10 @@ const betSettlement = {
 const leaderboard = {
   get: () => request<LeaderboardEntry[]>('/api/leaderboard/GetLeaderboard'),
 }
-
+// ── Awards ──────────────────────────────────────────────────────────────────
+const awards = {
+  get: () => request<AwardCategory[]>('/api/awards/GetAwards'),
+}
 // ── Question Generator ────────────────────────────────────────────────────────
 export interface GeneratedQuestion {
   id: number
@@ -234,4 +238,4 @@ const questionGenerator = {
 }
 
 // ── Exported API object ───────────────────────────────────────────────────────
-export const api = { users, matches, questions, userAnswers, transactions, matchStatuses, bettingStats, betSettlement, leaderboard, questionGenerator }
+export const api = { users, matches, questions, userAnswers, transactions, matchStatuses, bettingStats, betSettlement, leaderboard, awards, questionGenerator }

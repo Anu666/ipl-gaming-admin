@@ -2177,3 +2177,141 @@
   }
 }
 
+/* ── Awards page ─────────────────────────────────────────────────────────── */
+.awards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.award-card {
+  background: #ffffff10;
+  border: 1px solid #ffffff1a;
+  border-radius: 1rem;
+  padding: 1rem;
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.award-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.award-emoji {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.award-title {
+  margin: 0 0 0.15rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--paper);
+}
+
+.award-description {
+  margin: 0;
+  font-size: 0.75rem;
+  opacity: 0.55;
+  line-height: 1.4;
+}
+
+.award-winners {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.award-winner-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 6px;
+}
+
+.award-medal {
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.award-winner-name {
+  flex: 1;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--paper);
+}
+
+.award-winner-value {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.6;
+  font-size: 0.8rem;
+}
+
+.award-no-winners {
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.4;
+}
+
+.award-view-all {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 0.25rem;
+  color: var(--teal);
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-align: left;
+  opacity: 0.85;
+}
+
+.award-view-all:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.award-back-btn {
+  background: none;
+  border: 1px solid #ffffff22;
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  color: var(--paper);
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-bottom: 1.25rem;
+  opacity: 0.75;
+}
+
+.award-back-btn:hover {
+  opacity: 1;
+  background: #ffffff0d;
+}
+
+.award-detail-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.award-detail-title {
+  margin: 0 0 0.2rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--paper);
+}
+
+.award-podium-row td {
+  font-weight: 600;
+}
+

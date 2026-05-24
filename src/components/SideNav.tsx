@@ -13,6 +13,7 @@ const NAV_ITEMS: NavItem[] = [
   { page: 'questions', label: 'Templates', icon: '❓' },
   { page: 'match-questions', label: 'Questions', icon: '📝' },
   { page: 'leaderboard', label: 'Leaderboard', icon: '🏆' },
+  { page: 'awards', label: 'Awards', icon: '🏅' },
   { page: 'users', label: 'Users', icon: '👤', superAdminOnly: true },
   { page: 'transactions', label: 'Transactions', icon: '💳', superAdminOnly: true },
 ]

@@ -1,5 +1,5 @@
 // ── Page navigation ──────────────────────────────────────────────────────────
-export type Page = 'home' | 'matches' | 'users' | 'questions' | 'match-questions' | 'transactions' | 'leaderboard'
+export type Page = 'home' | 'matches' | 'users' | 'questions' | 'match-questions' | 'transactions' | 'leaderboard' | 'awards'
 
 // ── Enums ────────────────────────────────────────────────────────────────────
 export const UserRole = {
@@ -277,6 +277,23 @@ export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
 export interface UpdateCreditsRequest {
   credits: number
   operation: CreditsOperation
+}
+
+// ── Awards ──────────────────────────────────────────────────────────────────
+export interface AwardWinner {
+  userId: string
+  userName: string
+  value: number
+  formattedValue: string
+  position: number
+}
+
+export interface AwardCategory {
+  key: string
+  label: string
+  emoji: string
+  description: string
+  winners: AwardWinner[]
 }
 
 // ── Leaderboard ──────────────────────────────────────────────────────────────

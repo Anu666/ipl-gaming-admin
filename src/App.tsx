@@ -4,7 +4,7 @@ import { ApiKeyGate } from './components/ApiKeyGate'
 import { SideNav } from './components/SideNav'
 import { TopBar } from './components/TopBar'
 import { getApiKey, clearApiKey, api } from './lib/api'
-import type { Page, User, LeaderboardEntry } from './lib/types'
+import type { Page, User, LeaderboardEntry, AwardCategory } from './lib/types'
 import { UserRole } from './lib/types'
 import { HomePage } from './pages/HomePage'
 import { MatchesPage } from './pages/MatchesPage'
@@ -13,6 +13,7 @@ import { MatchQuestionsPage } from './pages/MatchQuestionsPage'
 import { UsersPage } from './pages/UsersPage'
 import { TransactionsPage } from './pages/TransactionsPage'
 import { LeaderboardPage } from './pages/LeaderboardPage'
+import { AwardsPage } from './pages/AwardsPage'
 
 const PAGE_LABELS: Record<Page, string> = {
   home: 'Dashboard',
@@ -22,13 +23,14 @@ const PAGE_LABELS: Record<Page, string> = {
   users: 'Users',
   transactions: 'Transactions',
   leaderboard: 'Leaderboard',
+  awards: 'Awards',
 }
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => !!getApiKey())
   const [currentPage, setCurrentPage] = useState<Page>(() => {
     const saved = localStorage.getItem('admin-page')
-    const valid: Page[] = ['home', 'matches', 'users', 'questions', 'match-questions', 'transactions', 'leaderboard']
+    const valid: Page[] = ['home', 'matches', 'users', 'questions', 'match-questions', 'transactions', 'leaderboard', 'awards']
     return (valid.includes(saved as Page) ? saved : 'home') as Page
   })
   const [currentUser, setCurrentUser] = useState<User | null>(null)
@@ -36,6 +38,7 @@ function App() {
   const [userError, setUserError] = useState<string | null>(null)
   const [matchQuestionsMatchId, setMatchQuestionsMatchId] = useState<string | undefined>(undefined)
   const [leaderboardRows, setLeaderboardRows] = useState<LeaderboardEntry[]>([])
+  const [awardCategories, setAwardCategories] = useState<AwardCategory[]>([])
 
   useEffect(() => {
     localStorage.setItem('admin-page', currentPage)
@@ -43,6 +46,7 @@ function App() {
 
   useEffect(() => {
     api.leaderboard.get().then(setLeaderboardRows).catch(() => {})
+    api.awards.get().then(setAwardCategories).catch(() => {})
   }, [])
 
   const handleNavigateToMatchQuestions = (matchId: string) => {
@@ -166,6 +170,7 @@ function App() {
           {safePage === 'match-questions' && <MatchQuestionsPage key={matchQuestionsMatchId} isSuperAdmin={isSuperAdmin} initialMatchId={matchQuestionsMatchId} />}
           {safePage === 'transactions' && isSuperAdmin && <TransactionsPage />}
           {safePage === 'leaderboard' && <LeaderboardPage rows={leaderboardRows} />}
+          {safePage === 'awards' && <AwardsPage categories={awardCategories} />}
         </div>
       </div>
     </div>
